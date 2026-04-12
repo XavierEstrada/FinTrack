@@ -13,8 +13,8 @@ public class ReportsController(ReportService service) : ControllerBase
     /// <summary>GET /api/reports/summary?from=2025-01-01&amp;to=2025-12-31</summary>
     [HttpGet("summary")]
     public async Task<IActionResult> GetSummary(
-        [FromQuery] DateTime from,
-        [FromQuery] DateTime to)
+        [FromQuery] DateOnly from,
+        [FromQuery] DateOnly to)
     {
         var userId = User.GetUserId();
         var result = await service.GetSummaryAsync(userId, from, to);
@@ -24,8 +24,8 @@ public class ReportsController(ReportService service) : ControllerBase
     /// <summary>GET /api/reports/by-category?from=2025-01-01&amp;to=2025-12-31</summary>
     [HttpGet("by-category")]
     public async Task<IActionResult> GetByCategory(
-        [FromQuery] DateTime from,
-        [FromQuery] DateTime to)
+        [FromQuery] DateOnly from,
+        [FromQuery] DateOnly to)
     {
         var userId = User.GetUserId();
         var result = await service.GetByCategoryAsync(userId, from, to);

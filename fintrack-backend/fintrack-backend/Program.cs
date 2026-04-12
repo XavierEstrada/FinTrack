@@ -1,5 +1,3 @@
-
-using System.Text;
 using fintrack_backend.Data;
 using fintrack_backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -13,23 +11,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ── JWT (Supabase) ───────────────────────────────────────────────────────────
-var jwtSecret = builder.Configuration["Supabase:JwtSecret"]
-    ?? throw new InvalidOperationException("Falta Supabase:JwtSecret en la configuración.");
+// ── JWT (Supabase ES256) ─────────────────────────────────────────────────────
+// Supabase nuevos proyectos usan ES256 (asimétrico).
+// Se usa Authority para que .NET descubra las claves públicas via JWKS automáticamente.
+var issuer = builder.Configuration["Supabase:Issuer"]
+    ?? throw new InvalidOperationException("Falta Supabase:Issuer en la configuración.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.Authority = issuer;   // descarga JWKS desde {issuer}/.well-known/jwks.json
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer           = true,
-            ValidIssuer              = builder.Configuration["Supabase:Issuer"],
-            ValidateAudience         = true,
-            ValidAudience            = "authenticated",
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateLifetime         = true,
-            ClockSkew                = TimeSpan.FromSeconds(30),
+            ValidateIssuer   = true,
+            ValidIssuer      = issuer,
+            ValidateAudience = true,
+            ValidAudience    = "authenticated",
+            ValidateLifetime = true,
+            ClockSkew        = TimeSpan.FromSeconds(30),
         };
     });
 

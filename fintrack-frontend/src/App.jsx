@@ -5,7 +5,14 @@ import { router } from './router'
 import AuthProvider from './components/auth/AuthProvider'
 import './store/themeStore' // inicializa dark mode desde localStorage
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 1000 * 30,
+    },
+  },
+})
 
 export default function App() {
   return (

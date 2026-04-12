@@ -1,76 +1,83 @@
 import { useState } from 'react'
-import { Search, Plus, SlidersHorizontal, Pencil, Trash2, Receipt } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
-import { mockTransactions, mockCategories } from '../mocks/data'
 import { formatCurrency, formatDate } from '../lib/utils'
+import { useTransactions, useDeleteTransaction } from '../hooks/useTransactions'
+import { useCategories } from '../hooks/useCategories'
 import TransactionModal from '../components/transactions/TransactionModal'
+
+const LIMIT = 10
+
+const inputCls = 'text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600'
 
 export default function TransactionsPage() {
   const [search, setSearch]                 = useState('')
-  const [typeFilter, setTypeFilter]         = useState('all')
-  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [typeFilter, setTypeFilter]         = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [page, setPage]                     = useState(1)
   const [modalOpen, setModalOpen]           = useState(false)
   const [editing, setEditing]               = useState(null)
 
-  const filtered = mockTransactions.filter(tx => {
-    const matchSearch   = tx.description.toLowerCase().includes(search.toLowerCase())
-    const matchType     = typeFilter === 'all' || tx.type === typeFilter
-    const matchCategory = categoryFilter === 'all' || tx.category === categoryFilter
-    return matchSearch && matchType && matchCategory
-  })
+  const params = {
+    page,
+    limit: LIMIT,
+    ...(typeFilter     && { type: typeFilter }),
+    ...(categoryFilter && { categoryId: categoryFilter }),
+    ...(search         && { search }),
+  }
+
+  const { data, isLoading, isError } = useTransactions(params)
+  const { data: categories = [] }    = useCategories()
+  const deleteMutation               = useDeleteTransaction()
+
+  const transactions = data?.data  ?? []
+  const total        = data?.total ?? 0
+  const totalPages   = Math.max(1, Math.ceil(total / LIMIT))
 
   const openNew  = ()   => { setEditing(null); setModalOpen(true) }
   const openEdit = (tx) => { setEditing(tx);   setModalOpen(true) }
 
   const handleDelete = (tx) => {
-    toast.error('Transacción eliminada', {
-      description: tx.description,
-      action: { label: 'Deshacer', onClick: () => toast.info('Acción deshecha (demo)') },
+    if (!window.confirm(`¿Eliminar "${tx.description}"?`)) return
+    deleteMutation.mutate(tx.id, {
+      onSuccess: () => toast.success('Transacción eliminada'),
+      onError:   () => toast.error('No se pudo eliminar la transacción'),
     })
   }
 
-  const inputCls = 'text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600'
+  const handleFilterChange = (setter) => (e) => {
+    setter(e.target.value)
+    setPage(1)
+  }
 
   return (
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex flex-1 items-center gap-2 flex-wrap">
+
           <div className="relative flex-1 min-w-[160px]">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={handleFilterChange(setSearch)}
               placeholder="Buscar…"
               className={`w-full pl-9 pr-3 py-2 ${inputCls}`}
             />
           </div>
 
-          <select
-            value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value)}
-            className={inputCls}
-          >
-            <option value="all">Todos los tipos</option>
+          <select value={typeFilter} onChange={handleFilterChange(setTypeFilter)} className={inputCls}>
+            <option value="">Todos los tipos</option>
             <option value="income">Ingresos</option>
             <option value="expense">Gastos</option>
           </select>
 
-          <select
-            value={categoryFilter}
-            onChange={e => setCategoryFilter(e.target.value)}
-            className={inputCls}
-          >
-            <option value="all">Todas las categorías</option>
-            {mockCategories.map(c => (
-              <option key={c.id} value={c.name}>{c.name}</option>
+          <select value={categoryFilter} onChange={handleFilterChange(setCategoryFilter)} className={inputCls}>
+            <option value="">Todas las categorías</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-
-          <button className="flex items-center gap-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-            <SlidersHorizontal size={15} />
-            <span className="hidden sm:inline">Filtros</span>
-          </button>
         </div>
 
         <button
@@ -97,9 +104,27 @@ export default function TransactionsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-              {filtered.map(tx => (
-                <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                  <td className="px-4 md:px-5 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDate(tx.date)}</td>
+              {isLoading && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
+                    Cargando…
+                  </td>
+                </tr>
+              )}
+
+              {isError && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center text-rose-400 text-sm">
+                    Error al cargar las transacciones
+                  </td>
+                </tr>
+              )}
+
+              {!isLoading && !isError && transactions.map(tx => (
+                <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <td className="px-4 md:px-5 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    {formatDate(tx.date)}
+                  </td>
                   <td className="px-4 md:px-5 py-3.5 font-medium text-slate-800 dark:text-slate-100">
                     <div className="flex items-center gap-2">
                       <span className={`w-1 h-8 rounded-full shrink-0 ${tx.type === 'income' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
@@ -108,8 +133,8 @@ export default function TransactionsPage() {
                   </td>
                   <td className="px-4 md:px-5 py-3.5">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: tx.category_color }} />
-                      <span className="text-slate-600 dark:text-slate-400">{tx.category}</span>
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: tx.categoryColor ?? '#94a3b8' }} />
+                      <span className="text-slate-600 dark:text-slate-400">{tx.categoryName ?? '—'}</span>
                     </span>
                   </td>
                   <td className="px-4 md:px-5 py-3.5">
@@ -124,13 +149,20 @@ export default function TransactionsPage() {
                   <td className={`px-4 md:px-5 py-3.5 text-right font-semibold ${
                     tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'
                   }`}>
-                    {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                    {tx.type === 'income' ? '+' : '−'}{formatCurrency(tx.amount)}
                   </td>
                   <td className="px-4 md:px-5 py-3.5">
                     <div className="flex items-center justify-end gap-1.5">
-                      <button className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors">
-                        <Receipt size={14} />
-                      </button>
+                      {tx.receiptUrl && (
+                        <a
+                          href={tx.receiptUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md transition-colors"
+                        >
+                          <Receipt size={14} />
+                        </a>
+                      )}
                       <button
                         onClick={() => openEdit(tx)}
                         className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-md transition-colors"
@@ -139,7 +171,8 @@ export default function TransactionsPage() {
                       </button>
                       <button
                         onClick={() => handleDelete(tx)}
-                        className="p-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-md transition-colors"
+                        disabled={deleteMutation.isPending}
+                        className="p-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-md transition-colors disabled:opacity-40"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -147,7 +180,8 @@ export default function TransactionsPage() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
+
+              {!isLoading && !isError && transactions.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
                     No se encontraron transacciones
@@ -160,11 +194,49 @@ export default function TransactionsPage() {
 
         {/* Pagination */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 md:px-5 py-3 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-xs text-slate-400 dark:text-slate-500">Mostrando {filtered.length} de {mockTransactions.length} transacciones</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">
+            {total} transacción{total !== 1 ? 'es' : ''} en total
+          </p>
           <div className="flex items-center gap-1">
-            <button className="px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40" disabled>Anterior</button>
-            <span className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-md">1</span>
-            <button className="px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800">Siguiente</button>
+            <button
+              onClick={() => setPage(p => p - 1)}
+              disabled={page === 1}
+              className="p-1.5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={14} />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+              .reduce((acc, p, idx, arr) => {
+                if (idx > 0 && p - arr[idx - 1] > 1) acc.push('…')
+                acc.push(p)
+                return acc
+              }, [])
+              .map((p, i) =>
+                p === '…'
+                  ? <span key={`ellipsis-${i}`} className="px-2 text-xs text-slate-400">…</span>
+                  : <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                        page === p
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {p}
+                    </button>
+              )
+            }
+
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page === totalPages}
+              className="p-1.5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
         </div>
       </div>

@@ -11,7 +11,7 @@ public class TransactionService(AppDbContext db, IMapper mapper)
     public async Task<TransactionListDto> GetAllAsync(
         Guid userId, int page, int limit,
         string? type, Guid? categoryId,
-        DateTime? from, DateTime? to, string? search)
+        DateOnly? from, DateOnly? to, string? search)
     {
         var query = db.Transactions
             .Include(t => t.Category)
@@ -68,7 +68,6 @@ public class TransactionService(AppDbContext db, IMapper mapper)
         db.Transactions.Add(tx);
         await db.SaveChangesAsync();
 
-        // Recargar con categoría
         await db.Entry(tx).Reference(t => t.Category).LoadAsync();
         return mapper.Map<TransactionDto>(tx);
     }

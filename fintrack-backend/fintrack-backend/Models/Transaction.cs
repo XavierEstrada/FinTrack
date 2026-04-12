@@ -8,11 +8,10 @@ public class Transaction
     public decimal Amount { get; set; }
     public string Type { get; set; } = "expense";
     public string? Description { get; set; }
-    public DateTime Date { get; set; }
+    public DateOnly Date { get; set; }
     public string? ReceiptUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    // Navegación
     public Category? Category { get; set; }
 }

@@ -8,12 +8,9 @@ namespace fintrack_backend.Services;
 
 public class BudgetService(AppDbContext db, IMapper mapper)
 {
-    /// <summary>
-    /// Devuelve los presupuestos del mes indicado junto con el gasto real de cada categoría.
-    /// </summary>
     public async Task<IEnumerable<BudgetDto>> GetByMonthAsync(Guid userId, string month)
     {
-        if (!DateTime.TryParseExact(month + "-01", "yyyy-MM-dd",
+        if (!DateOnly.TryParseExact(month + "-01", "yyyy-MM-dd",
                 System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.None, out var monthDate))
             throw new ArgumentException("Formato de mes inválido. Use yyyy-MM.");
@@ -25,10 +22,8 @@ public class BudgetService(AppDbContext db, IMapper mapper)
             .Where(b => b.UserId == userId && b.Month == monthDate)
             .ToListAsync();
 
-        if (budgets.Count == 0)
-            return [];
+        if (budgets.Count == 0) return [];
 
-        // Gasto real por categoría en el mes — una sola query
         var categoryIds = budgets.Select(b => b.CategoryId).ToList();
 
         var spendingMap = await db.Transactions
@@ -50,9 +45,6 @@ public class BudgetService(AppDbContext db, IMapper mapper)
         });
     }
 
-    /// <summary>
-    /// Crea o actualiza el presupuesto de una categoría para un mes dado.
-    /// </summary>
     public async Task<BudgetDto> UpsertAsync(UpsertBudgetDto input, Guid userId)
     {
         var existing = await db.Budgets
@@ -70,7 +62,7 @@ public class BudgetService(AppDbContext db, IMapper mapper)
 
         var budget = new Budget
         {
-            Id        = Guid.NewGuid(),
+            Id         = Guid.NewGuid(),
             UserId     = userId,
             CategoryId = input.CategoryId,
             Amount     = input.Amount,

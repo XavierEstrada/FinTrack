@@ -6,7 +6,7 @@ namespace fintrack_backend.Services;
 
 public class ReportService(AppDbContext db)
 {
-    public async Task<SummaryDto> GetSummaryAsync(Guid userId, DateTime from, DateTime to)
+    public async Task<SummaryDto> GetSummaryAsync(Guid userId, DateOnly from, DateOnly to)
     {
         var totals = await db.Transactions
             .Where(t => t.UserId == userId && t.Date >= from && t.Date <= to)
@@ -28,9 +28,8 @@ public class ReportService(AppDbContext db)
     }
 
     public async Task<IEnumerable<CategoryReportDto>> GetByCategoryAsync(
-        Guid userId, DateTime from, DateTime to)
+        Guid userId, DateOnly from, DateOnly to)
     {
-        // Agrupar gastos por categoría
         var groups = await db.Transactions
             .Where(t => t.UserId == userId && t.Type == "expense"
                         && t.Date >= from && t.Date <= to)
@@ -38,10 +37,8 @@ public class ReportService(AppDbContext db)
             .Select(g => new { CategoryId = g.Key, Total = g.Sum(t => t.Amount) })
             .ToListAsync();
 
-        if (groups.Count == 0)
-            return [];
+        if (groups.Count == 0) return [];
 
-        // Cargar nombres en una sola query
         var categoryIds = groups
             .Where(g => g.CategoryId.HasValue)
             .Select(g => g.CategoryId!.Value)
@@ -60,11 +57,11 @@ public class ReportService(AppDbContext db)
                 categories.TryGetValue(g.CategoryId ?? Guid.Empty, out var cat);
                 return new CategoryReportDto
                 {
-                    CategoryId   = g.CategoryId,
-                    CategoryName = cat?.Name ?? "Sin categoría",
+                    CategoryId    = g.CategoryId,
+                    CategoryName  = cat?.Name ?? "Sin categoría",
                     CategoryColor = cat?.Color,
-                    Total        = g.Total,
-                    Percentage   = totalExpense > 0
+                    Total         = g.Total,
+                    Percentage    = totalExpense > 0
                         ? Math.Round(g.Total / totalExpense * 100, 2)
                         : 0m,
                 };
@@ -74,8 +71,8 @@ public class ReportService(AppDbContext db)
     public async Task<IEnumerable<MonthlyTrendDto>> GetMonthlyTrendAsync(
         Guid userId, int months = 6)
     {
-        var from = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1)
-                       .AddMonths(-(months - 1));
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var from  = new DateOnly(today.Year, today.Month, 1).AddMonths(-(months - 1));
 
         var transactions = await db.Transactions
             .Where(t => t.UserId == userId && t.Date >= from)

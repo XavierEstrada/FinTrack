@@ -5,8 +5,8 @@ public class SummaryDto
     public decimal TotalIncome { get; set; }
     public decimal TotalExpense { get; set; }
     public decimal Balance { get; set; }
-    public DateTime From { get; set; }
-    public DateTime To { get; set; }
+    public DateOnly From { get; set; }
+    public DateOnly To { get; set; }
 }
 
 public class CategoryReportDto

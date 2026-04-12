@@ -17,8 +17,8 @@ public class TransactionsController(TransactionService service) : ControllerBase
         [FromQuery] int limit = 10,
         [FromQuery] string? type = null,
         [FromQuery] Guid? categoryId = null,
-        [FromQuery] DateTime? from = null,
-        [FromQuery] DateTime? to = null,
+        [FromQuery] DateOnly? from = null,
+        [FromQuery] DateOnly? to = null,
         [FromQuery] string? search = null)
     {
         var userId = User.GetUserId();
@@ -37,7 +37,7 @@ public class TransactionsController(TransactionService service) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTransactionDto dto)
     {
-        var userId = User.GetUserId();
+        var userId  = User.GetUserId();
         var created = await service.CreateAsync(dto, userId);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
@@ -45,7 +45,7 @@ public class TransactionsController(TransactionService service) : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTransactionDto dto)
     {
-        var userId = User.GetUserId();
+        var userId  = User.GetUserId();
         var updated = await service.UpdateAsync(id, dto, userId);
         return updated is null ? NotFound() : Ok(updated);
     }
@@ -53,7 +53,7 @@ public class TransactionsController(TransactionService service) : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var userId = User.GetUserId();
+        var userId  = User.GetUserId();
         var deleted = await service.DeleteAsync(id, userId);
         return deleted ? NoContent() : NotFound();
     }

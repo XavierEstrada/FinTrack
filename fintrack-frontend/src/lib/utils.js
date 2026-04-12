@@ -5,23 +5,34 @@ export function formatCurrency(amount, currency = 'USD') {
   }).format(amount)
 }
 
+// Parsea fechas tipo "2026-04-10" evitando desfase por zona horaria
+function parseDate(date) {
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))
+    return new Date(date + 'T12:00:00')
+  return new Date(date)
+}
+
 export function formatDate(date) {
   return new Intl.DateTimeFormat('es-ES', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(date))
+    day: '2-digit', month: 'short', year: 'numeric',
+  }).format(parseDate(date))
 }
 
 export function formatRelativeDate(date) {
-  const d = new Date(date)
-  const now = new Date()
+  const d    = parseDate(date)
+  const now  = new Date()
   const diff = Math.floor((now - d) / (1000 * 60 * 60 * 24))
   if (diff === 0) return 'Hoy'
   if (diff === 1) return 'Ayer'
   if (diff < 7)  return `Hace ${diff} días`
   if (diff < 30) return `Hace ${Math.floor(diff / 7)} sem.`
   return formatDate(date)
+}
+
+export function monthLabel(monthStr) {
+  const [year, month] = monthStr.split('-')
+  return new Intl.DateTimeFormat('es-ES', { month: 'short' })
+    .format(new Date(Number(year), Number(month) - 1))
 }
 
 const GRADIENTS = [

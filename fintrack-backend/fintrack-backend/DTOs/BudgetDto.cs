@@ -9,13 +9,13 @@ public class BudgetDto
     public string? CategoryColor { get; set; }
     public string CategoryType { get; set; } = string.Empty;
     public decimal Amount { get; set; }
-    public DateTime Month { get; set; }
-    public decimal Spent { get; set; }          // calculado en el servicio
+    public DateOnly Month { get; set; }
+    public decimal Spent { get; set; }
 }
 
 public class UpsertBudgetDto
 {
     public Guid CategoryId { get; set; }
     public decimal Amount { get; set; }
-    public DateTime Month { get; set; }         // primer día del mes: 2025-01-01
+    public DateOnly Month { get; set; }
 }

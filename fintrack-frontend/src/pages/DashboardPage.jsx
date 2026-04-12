@@ -1,19 +1,21 @@
 import { TrendingUp, TrendingDown, DollarSign, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { mockTransactions, mockMonthlyData, mockCategoryExpenses } from '../mocks/data'
-import { formatCurrency, formatRelativeDate } from '../lib/utils'
+import { formatCurrency, formatRelativeDate, monthLabel } from '../lib/utils'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
+import { useSummary, useByCategory, useMonthlyTrend } from '../hooks/useReports'
+import { useTransactions } from '../hooks/useTransactions'
 
-const income   = mockTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-const expenses = mockTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-const balance  = income - expenses
+// Rango del mes actual
+function currentMonthRange() {
+  const now   = new Date()
+  const year  = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const lastDay = new Date(year, now.getMonth() + 1, 0).getDate()
+  return { from: `${year}-${month}-01`, to: `${year}-${month}-${lastDay}` }
+}
 
-const kpis = [
-  { label: 'Ingresos del mes', value: income,   icon: TrendingUp,   color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', trend: '+8.2% vs mes anterior' },
-  { label: 'Gastos del mes',   value: expenses, icon: TrendingDown, color: 'text-rose-500 dark:text-rose-400',       bg: 'bg-rose-50 dark:bg-rose-900/30',       trend: '-3.1% vs mes anterior' },
-  { label: 'Balance neto',     value: balance,  icon: DollarSign,   color: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-50 dark:bg-indigo-900/30',   trend: '+12.4% vs mes anterior' },
-]
+const { from, to } = currentMonthRange()
 
 const container = {
   hidden: {},
@@ -24,11 +26,16 @@ const cardItem = {
   show:   { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
 }
 
-function BarChart() {
-  const max = Math.max(...mockMonthlyData.flatMap(d => [d.income, d.expenses]))
+function BarChart({ data = [] }) {
+  if (!data.length) return (
+    <div className="h-44 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500">
+      Sin datos para mostrar
+    </div>
+  )
+  const max = Math.max(...data.flatMap(d => [d.income, d.expense]), 1)
   return (
     <div className="flex items-end justify-between gap-1 sm:gap-3 h-44 pt-4">
-      {mockMonthlyData.map((item, i) => (
+      {data.map((item, i) => (
         <div key={item.month} className="flex-1 flex flex-col items-center gap-2">
           <div className="w-full flex items-end justify-center gap-0.5 sm:gap-1" style={{ height: '140px' }}>
             <motion.div
@@ -43,23 +50,29 @@ function BarChart() {
               initial={{ scaleY: 0 }}
               animate={{ scaleY: 1 }}
               transition={{ duration: 0.6, delay: 0.15 + i * 0.07, ease: 'easeOut' }}
-              style={{ height: `${(item.expenses / max) * 100}%` }}
+              style={{ height: `${(item.expense / max) * 100}%` }}
             />
           </div>
-          <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium">{item.month}</span>
+          <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+            {monthLabel(item.month)}
+          </span>
         </div>
       ))}
     </div>
   )
 }
 
-function PieChart() {
-  let cumulative = 0
-  const gradient = mockCategoryExpenses.map(c => {
-    const start = cumulative
-    cumulative += c.pct
-    return `${c.color} ${start}% ${cumulative}%`
-  }).join(', ')
+function PieChart({ data = [] }) {
+  if (!data.length) return (
+    <div className="flex items-center justify-center h-28 text-xs text-slate-400 dark:text-slate-500">
+      Sin gastos en este período
+    </div>
+  )
+
+  const cumPcts  = data.map((_, i) => data.slice(0, i).reduce((s, c) => s + c.percentage, 0))
+  const gradient = data.map((c, i) =>
+    `${c.categoryColor ?? '#94a3b8'} ${cumPcts[i]}% ${cumPcts[i] + c.percentage}%`
+  ).join(', ')
 
   return (
     <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
@@ -76,13 +89,13 @@ function PieChart() {
         initial="hidden"
         animate="show"
       >
-        {mockCategoryExpenses.map(c => (
-          <motion.li key={c.name} variants={cardItem} className="flex items-center justify-between gap-2">
+        {data.map(c => (
+          <motion.li key={c.categoryId ?? c.categoryName} variants={cardItem} className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
-              <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">{c.name}</span>
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.categoryColor ?? '#94a3b8' }} />
+              <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">{c.categoryName}</span>
             </div>
-            <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 shrink-0">{formatCurrency(c.amount)}</span>
+            <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 shrink-0">{formatCurrency(c.total)}</span>
           </motion.li>
         ))}
       </motion.ul>
@@ -91,7 +104,35 @@ function PieChart() {
 }
 
 export default function DashboardPage() {
-  const recent = mockTransactions.slice(0, 5)
+  const { data: summary,  isLoading: loadingSummary }  = useSummary(from, to)
+  const { data: byCategory = [] }                       = useByCategory(from, to)
+  const { data: trend = [] }                            = useMonthlyTrend(6)
+  const { data: txData }                                = useTransactions({ page: 1, limit: 5 })
+  const recent = txData?.data ?? []
+
+  const kpis = [
+    {
+      label: 'Ingresos del mes',
+      value: summary?.totalIncome  ?? 0,
+      icon: TrendingUp,
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg:    'bg-emerald-50 dark:bg-emerald-900/30',
+    },
+    {
+      label: 'Gastos del mes',
+      value: summary?.totalExpense ?? 0,
+      icon: TrendingDown,
+      color: 'text-rose-500 dark:text-rose-400',
+      bg:    'bg-rose-50 dark:bg-rose-900/30',
+    },
+    {
+      label: 'Balance neto',
+      value: summary?.balance      ?? 0,
+      icon: DollarSign,
+      color: 'text-indigo-600 dark:text-indigo-400',
+      bg:    'bg-indigo-50 dark:bg-indigo-900/30',
+    },
+  ]
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -102,7 +143,7 @@ export default function DashboardPage() {
         initial="hidden"
         animate="show"
       >
-        {kpis.map(({ label, value, icon: Icon, color, bg, trend }) => (
+        {kpis.map(({ label, value, icon: Icon, color, bg }) => (
           <motion.div
             key={label}
             variants={cardItem}
@@ -114,10 +155,13 @@ export default function DashboardPage() {
                 <Icon size={18} className={color} />
               </div>
             </div>
-            <p className={`text-xl md:text-2xl font-bold tracking-tight ${color}`}>
-              <AnimatedNumber value={value} formatter={formatCurrency} duration={1} />
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{trend}</p>
+            {loadingSummary ? (
+              <div className="h-8 w-28 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+            ) : (
+              <p className={`text-xl md:text-2xl font-bold tracking-tight ${color}`}>
+                <AnimatedNumber value={value} formatter={formatCurrency} duration={1} />
+              </p>
+            )}
           </motion.div>
         ))}
       </motion.div>
@@ -138,13 +182,13 @@ export default function DashboardPage() {
             </div>
           </div>
           <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Últimos 6 meses</p>
-          <BarChart />
+          <BarChart data={trend} />
         </div>
 
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">Gastos por categoría</p>
           <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Mes actual</p>
-          <PieChart />
+          <PieChart data={byCategory} />
         </div>
       </motion.div>
 
@@ -161,33 +205,42 @@ export default function DashboardPage() {
             Ver todas <ArrowRight size={13} />
           </Link>
         </div>
-        <motion.ul
-          className="divide-y divide-slate-50 dark:divide-slate-800"
-          variants={container}
-          initial="hidden"
-          animate="show"
-        >
-          {recent.map(tx => (
-            <motion.li
-              key={tx.id}
-              variants={cardItem}
-              className="flex items-center justify-between px-4 md:px-5 py-3 md:py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: tx.category_color + '20' }}>
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: tx.category_color }} />
+        {recent.length === 0 ? (
+          <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-8">
+            No hay transacciones recientes
+          </p>
+        ) : (
+          <motion.ul
+            className="divide-y divide-slate-50 dark:divide-slate-800"
+            variants={container}
+            initial="hidden"
+            animate="show"
+          >
+            {recent.map(tx => (
+              <motion.li
+                key={tx.id}
+                variants={cardItem}
+                className="flex items-center justify-between px-4 md:px-5 py-3 md:py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: (tx.categoryColor ?? '#94a3b8') + '20' }}>
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: tx.categoryColor ?? '#94a3b8' }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{tx.description}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      {tx.categoryName ?? '—'} · {formatRelativeDate(tx.date)}
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{tx.description}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">{tx.category} · {formatRelativeDate(tx.date)}</p>
-                </div>
-              </div>
-              <span className={`text-sm font-semibold shrink-0 ml-3 ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-              </span>
-            </motion.li>
-          ))}
-        </motion.ul>
+                <span className={`text-sm font-semibold shrink-0 ml-3 ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                </span>
+              </motion.li>
+            ))}
+          </motion.ul>
+        )}
       </motion.div>
     </div>
   )

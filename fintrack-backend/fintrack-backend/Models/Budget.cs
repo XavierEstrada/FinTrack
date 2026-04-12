@@ -6,9 +6,8 @@ public class Budget
     public Guid UserId { get; set; }
     public Guid CategoryId { get; set; }
     public decimal Amount { get; set; }
-    public DateTime Month { get; set; }
+    public DateOnly Month { get; set; }
     public DateTime CreatedAt { get; set; }
 
-    // Navegación
     public Category? Category { get; set; }
 }

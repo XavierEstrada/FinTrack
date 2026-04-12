@@ -4,23 +4,28 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import Modal from '../ui/Modal'
-import { mockCategories } from '../../mocks/data'
+import { useCategories } from '../../hooks/useCategories'
+import { useCreateTransaction, useUpdateTransaction } from '../../hooks/useTransactions'
 
 const schema = z.object({
   description: z.string().min(1, 'La descripción es requerida'),
   amount:      z.coerce.number().positive('El monto debe ser mayor a 0'),
   type:        z.enum(['income', 'expense']),
-  category_id: z.string().min(1, 'Selecciona una categoría'),
+  categoryId:  z.string().min(1, 'Selecciona una categoría'),
   date:        z.string().min(1, 'La fecha es requerida'),
 })
 
-const field = 'w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500'
-const label = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5'
+const field  = 'w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500'
+const label  = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5'
 const errCls = 'text-red-500 text-xs mt-1'
 
 export default function TransactionModal({ isOpen, onClose, transaction = null }) {
   const isEditing = !!transaction
-  const today = new Date().toISOString().split('T')[0]
+  const today     = new Date().toISOString().split('T')[0]
+
+  const { data: categories = [], isLoading: loadingCategories } = useCategories()
+  const createMutation = useCreateTransaction()
+  const updateMutation = useUpdateTransaction()
 
   const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -33,24 +38,30 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
         description: transaction.description,
         amount:      transaction.amount,
         type:        transaction.type,
-        category_id: transaction.id,
-        date:        transaction.date,
+        categoryId:  transaction.categoryId ?? '',
+        date:        transaction.date?.split('T')[0] ?? today,
       })
     } else {
-      reset({ type: 'expense', date: today })
+      reset({ type: 'expense', date: today, categoryId: '', description: '', amount: '' })
     }
   }, [transaction, isOpen])
 
-  const selectedType = watch('type')
-  const filteredCategories = mockCategories.filter(c => c.type === selectedType)
+  const selectedType        = watch('type')
+  const filteredCategories  = categories.filter(c => c.type === selectedType)
 
   const onSubmit = async (data) => {
-    // TODO: conectar con transactionService.create() / .update() en Fase 2
-    console.log('Transacción:', data)
-    toast.success(isEditing ? 'Transacción actualizada' : 'Transacción agregada', {
-      description: data.description,
-    })
-    onClose()
+    try {
+      if (isEditing) {
+        await updateMutation.mutateAsync({ id: transaction.id, data })
+        toast.success('Transacción actualizada', { description: data.description })
+      } else {
+        await createMutation.mutateAsync(data)
+        toast.success('Transacción agregada', { description: data.description })
+      }
+      onClose()
+    } catch {
+      toast.error('No se pudo guardar la transacción')
+    }
   }
 
   return (
@@ -62,8 +73,8 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
           <p className={label}>Tipo</p>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: 'expense', label: 'Gasto',   active: 'bg-rose-500 text-white border-rose-500'        },
-              { value: 'income',  label: 'Ingreso', active: 'bg-emerald-500 text-white border-emerald-500'  },
+              { value: 'expense', label: 'Gasto',   active: 'bg-rose-500 text-white border-rose-500'       },
+              { value: 'income',  label: 'Ingreso',  active: 'bg-emerald-500 text-white border-emerald-500' },
             ].map(opt => (
               <label
                 key={opt.value}
@@ -111,11 +122,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
 
           <div>
             <label className={label}>Fecha</label>
-            <input
-              {...register('date')}
-              type="date"
-              className={field}
-            />
+            <input {...register('date')} type="date" className={field} />
             {errors.date && <p className={errCls}>{errors.date.message}</p>}
           </div>
         </div>
@@ -123,21 +130,15 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
         {/* Categoría */}
         <div>
           <label className={label}>Categoría</label>
-          <select {...register('category_id')} className={field}>
-            <option value="">Seleccionar categoría…</option>
+          <select {...register('categoryId')} className={field} disabled={loadingCategories}>
+            <option value="">
+              {loadingCategories ? 'Cargando categorías…' : 'Seleccionar categoría…'}
+            </option>
             {filteredCategories.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          {errors.category_id && <p className={errCls}>{errors.category_id.message}</p>}
-        </div>
-
-        {/* Comprobante placeholder */}
-        <div>
-          <label className={label}>Comprobante <span className="text-slate-300 dark:text-slate-600">(opcional)</span></label>
-          <div className="w-full border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg px-4 py-5 text-center text-slate-400 text-sm hover:border-indigo-300 dark:hover:border-indigo-600 hover:text-indigo-400 transition-colors cursor-pointer">
-            Arrastra un archivo o haz click para subir
-          </div>
+          {errors.categoryId && <p className={errCls}>{errors.categoryId.message}</p>}
         </div>
 
         {/* Actions */}
