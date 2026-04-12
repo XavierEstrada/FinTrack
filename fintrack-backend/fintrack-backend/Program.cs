@@ -44,8 +44,12 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()));
 
 // ── Servicios ────────────────────────────────────────────────────────────────
-builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<fintrack_backend.Mappings.MappingProfile>());
 builder.Services.AddScoped<TransactionService>();
+builder.Services.AddScoped<BudgetService>();
+builder.Services.AddScoped<ReportService>();
+builder.Services.AddScoped<ProfileService>();
+builder.Services.AddScoped<AdminService>();
 
 // ── Controllers + OpenAPI ────────────────────────────────────────────────────
 builder.Services.AddControllers();
