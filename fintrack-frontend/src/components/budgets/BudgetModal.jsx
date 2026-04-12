@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import Modal from '../ui/Modal'
 import { mockCategories } from '../../mocks/data'
 
@@ -11,8 +12,8 @@ const schema = z.object({
   month:       z.string().min(1, 'Selecciona un mes'),
 })
 
-const field = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-const label = 'block text-xs font-medium text-slate-500 mb-1.5'
+const field = 'w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+const label = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5'
 const errCls = 'text-red-500 text-xs mt-1'
 
 const expenseCategories = mockCategories.filter(c => c.type === 'expense')
@@ -37,6 +38,7 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
   const onSubmit = async (data) => {
     // TODO: conectar con budgetService.create() / .update() en Fase 4
     console.log('Presupuesto:', data)
+    toast.success(isEditing ? 'Presupuesto actualizado' : 'Presupuesto creado')
     onClose()
   }
 
@@ -81,11 +83,11 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
           {errors.month && <p className={errCls}>{errors.month.message}</p>}
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             Cancelar
           </button>

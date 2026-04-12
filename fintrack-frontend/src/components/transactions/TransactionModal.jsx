@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import Modal from '../ui/Modal'
 import { mockCategories } from '../../mocks/data'
 
@@ -13,9 +14,9 @@ const schema = z.object({
   date:        z.string().min(1, 'La fecha es requerida'),
 })
 
-const field = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-const label = 'block text-xs font-medium text-slate-500 mb-1.5'
-const error = 'text-red-500 text-xs mt-1'
+const field = 'w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500'
+const label = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5'
+const errCls = 'text-red-500 text-xs mt-1'
 
 export default function TransactionModal({ isOpen, onClose, transaction = null }) {
   const isEditing = !!transaction
@@ -26,7 +27,6 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
     defaultValues: { type: 'expense', date: today },
   })
 
-  // Cargar datos al editar
   useEffect(() => {
     if (transaction) {
       reset({
@@ -47,6 +47,9 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
   const onSubmit = async (data) => {
     // TODO: conectar con transactionService.create() / .update() en Fase 2
     console.log('Transacción:', data)
+    toast.success(isEditing ? 'Transacción actualizada' : 'Transacción agregada', {
+      description: data.description,
+    })
     onClose()
   }
 
@@ -54,20 +57,20 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
     <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar transacción' : 'Nueva transacción'}>
       <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
 
-        {/* Tipo — primero para filtrar categorías */}
+        {/* Tipo */}
         <div>
           <p className={label}>Tipo</p>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: 'expense', label: 'Gasto',   active: 'bg-rose-500 text-white border-rose-500'   },
-              { value: 'income',  label: 'Ingreso', active: 'bg-emerald-500 text-white border-emerald-500' },
+              { value: 'expense', label: 'Gasto',   active: 'bg-rose-500 text-white border-rose-500'        },
+              { value: 'income',  label: 'Ingreso', active: 'bg-emerald-500 text-white border-emerald-500'  },
             ].map(opt => (
               <label
                 key={opt.value}
                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors ${
                   selectedType === opt.value
                     ? opt.active
-                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
                 <input type="radio" value={opt.value} {...register('type')} className="sr-only" />
@@ -85,10 +88,10 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
             placeholder="Ej: Supermercado, Salario…"
             className={field}
           />
-          {errors.description && <p className={error}>{errors.description.message}</p>}
+          {errors.description && <p className={errCls}>{errors.description.message}</p>}
         </div>
 
-        {/* Monto y fecha en fila */}
+        {/* Monto y fecha */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={label}>Monto</label>
@@ -103,7 +106,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
                 className={`${field} pl-7`}
               />
             </div>
-            {errors.amount && <p className={error}>{errors.amount.message}</p>}
+            {errors.amount && <p className={errCls}>{errors.amount.message}</p>}
           </div>
 
           <div>
@@ -113,7 +116,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
               type="date"
               className={field}
             />
-            {errors.date && <p className={error}>{errors.date.message}</p>}
+            {errors.date && <p className={errCls}>{errors.date.message}</p>}
           </div>
         </div>
 
@@ -126,24 +129,23 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          {errors.category_id && <p className={error}>{errors.category_id.message}</p>}
+          {errors.category_id && <p className={errCls}>{errors.category_id.message}</p>}
         </div>
 
         {/* Comprobante placeholder */}
         <div>
-          <label className={label}>Comprobante <span className="text-slate-300">(opcional)</span></label>
-          {/* TODO: conectar con Supabase Storage en Fase 2 */}
-          <div className="w-full border-2 border-dashed border-slate-200 rounded-lg px-4 py-5 text-center text-slate-400 text-sm hover:border-indigo-300 hover:text-indigo-400 transition-colors cursor-pointer">
+          <label className={label}>Comprobante <span className="text-slate-300 dark:text-slate-600">(opcional)</span></label>
+          <div className="w-full border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg px-4 py-5 text-center text-slate-400 text-sm hover:border-indigo-300 dark:hover:border-indigo-600 hover:text-indigo-400 transition-colors cursor-pointer">
             Arrastra un archivo o haz click para subir
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             Cancelar
           </button>

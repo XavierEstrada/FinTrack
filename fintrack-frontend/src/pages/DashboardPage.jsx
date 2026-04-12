@@ -2,7 +2,7 @@ import { TrendingUp, TrendingDown, DollarSign, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { mockTransactions, mockMonthlyData, mockCategoryExpenses } from '../mocks/data'
-import { formatCurrency, formatDate } from '../lib/utils'
+import { formatCurrency, formatRelativeDate } from '../lib/utils'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
 
 const income   = mockTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
@@ -10,12 +10,11 @@ const expenses = mockTransactions.filter(t => t.type === 'expense').reduce((s, t
 const balance  = income - expenses
 
 const kpis = [
-  { label: 'Ingresos del mes', value: income,   icon: TrendingUp,   color: 'text-emerald-600', bg: 'bg-emerald-50', trend: '+8.2% vs mes anterior' },
-  { label: 'Gastos del mes',   value: expenses, icon: TrendingDown, color: 'text-rose-500',    bg: 'bg-rose-50',    trend: '-3.1% vs mes anterior' },
-  { label: 'Balance neto',     value: balance,  icon: DollarSign,   color: 'text-indigo-600',  bg: 'bg-indigo-50',  trend: '+12.4% vs mes anterior' },
+  { label: 'Ingresos del mes', value: income,   icon: TrendingUp,   color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', trend: '+8.2% vs mes anterior' },
+  { label: 'Gastos del mes',   value: expenses, icon: TrendingDown, color: 'text-rose-500 dark:text-rose-400',       bg: 'bg-rose-50 dark:bg-rose-900/30',       trend: '-3.1% vs mes anterior' },
+  { label: 'Balance neto',     value: balance,  icon: DollarSign,   color: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-50 dark:bg-indigo-900/30',   trend: '+12.4% vs mes anterior' },
 ]
 
-// Variantes para stagger de cards
 const container = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08 } },
@@ -32,24 +31,22 @@ function BarChart() {
       {mockMonthlyData.map((item, i) => (
         <div key={item.month} className="flex-1 flex flex-col items-center gap-2">
           <div className="w-full flex items-end justify-center gap-0.5 sm:gap-1" style={{ height: '140px' }}>
-            {/* Barra ingresos */}
             <motion.div
-              className="flex-1 max-w-5 bg-emerald-400 rounded-t origin-bottom"
+              className="flex-1 max-w-5 bg-emerald-400 dark:bg-emerald-500 rounded-t origin-bottom"
               initial={{ scaleY: 0 }}
               animate={{ scaleY: 1 }}
               transition={{ duration: 0.6, delay: 0.1 + i * 0.07, ease: 'easeOut' }}
               style={{ height: `${(item.income / max) * 100}%` }}
             />
-            {/* Barra gastos */}
             <motion.div
-              className="flex-1 max-w-5 bg-rose-300 rounded-t origin-bottom"
+              className="flex-1 max-w-5 bg-rose-300 dark:bg-rose-500 rounded-t origin-bottom"
               initial={{ scaleY: 0 }}
               animate={{ scaleY: 1 }}
               transition={{ duration: 0.6, delay: 0.15 + i * 0.07, ease: 'easeOut' }}
               style={{ height: `${(item.expenses / max) * 100}%` }}
             />
           </div>
-          <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">{item.month}</span>
+          <span className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-medium">{item.month}</span>
         </div>
       ))}
     </div>
@@ -83,9 +80,9 @@ function PieChart() {
           <motion.li key={c.name} variants={cardItem} className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
-              <span className="text-xs sm:text-sm text-slate-600 truncate">{c.name}</span>
+              <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">{c.name}</span>
             </div>
-            <span className="text-xs sm:text-sm font-medium text-slate-800 shrink-0">{formatCurrency(c.amount)}</span>
+            <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 shrink-0">{formatCurrency(c.amount)}</span>
           </motion.li>
         ))}
       </motion.ul>
@@ -98,7 +95,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* KPI Cards con stagger */}
+      {/* KPI Cards */}
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"
         variants={container}
@@ -109,10 +106,10 @@ export default function DashboardPage() {
           <motion.div
             key={label}
             variants={cardItem}
-            className="bg-white rounded-xl p-4 md:p-5 border border-slate-200 shadow-sm"
+            className="bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
           >
             <div className="flex items-start justify-between mb-3">
-              <p className="text-sm font-medium text-slate-500">{label}</p>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
               <div className={`w-9 h-9 ${bg} rounded-lg flex items-center justify-center`}>
                 <Icon size={18} className={color} />
               </div>
@@ -120,7 +117,7 @@ export default function DashboardPage() {
             <p className={`text-xl md:text-2xl font-bold tracking-tight ${color}`}>
               <AnimatedNumber value={value} formatter={formatCurrency} duration={1} />
             </p>
-            <p className="text-xs text-slate-400 mt-1">{trend}</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{trend}</p>
           </motion.div>
         ))}
       </motion.div>
@@ -132,40 +129,40 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.2, ease: 'easeOut' }}
       >
-        <div className="lg:col-span-3 bg-white rounded-xl p-4 md:p-5 border border-slate-200 shadow-sm">
+        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold text-slate-800">Ingresos vs Gastos</p>
-            <div className="flex items-center gap-3 text-xs text-slate-400">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block" /> Ingresos</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-300 inline-block" /> Gastos</span>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Ingresos vs Gastos</p>
+            <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 dark:bg-emerald-500 inline-block" /> Ingresos</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-300 dark:bg-rose-500 inline-block" /> Gastos</span>
             </div>
           </div>
-          <p className="text-xs text-slate-400 mb-2">Últimos 6 meses</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Últimos 6 meses</p>
           <BarChart />
         </div>
 
-        <div className="lg:col-span-2 bg-white rounded-xl p-4 md:p-5 border border-slate-200 shadow-sm">
-          <p className="text-sm font-semibold text-slate-800 mb-1">Gastos por categoría</p>
-          <p className="text-xs text-slate-400 mb-4">Mes actual</p>
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">Gastos por categoría</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Mes actual</p>
           <PieChart />
         </div>
       </motion.div>
 
       {/* Recent transactions */}
       <motion.div
-        className="bg-white rounded-xl border border-slate-200 shadow-sm"
+        className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.3, ease: 'easeOut' }}
       >
-        <div className="flex items-center justify-between px-4 md:px-5 py-4 border-b border-slate-100">
-          <p className="text-sm font-semibold text-slate-800">Últimas transacciones</p>
-          <Link to="/transactions" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800">
+        <div className="flex items-center justify-between px-4 md:px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Últimas transacciones</p>
+          <Link to="/transactions" className="flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
             Ver todas <ArrowRight size={13} />
           </Link>
         </div>
         <motion.ul
-          className="divide-y divide-slate-50"
+          className="divide-y divide-slate-50 dark:divide-slate-800"
           variants={container}
           initial="hidden"
           animate="show"
@@ -174,18 +171,18 @@ export default function DashboardPage() {
             <motion.li
               key={tx.id}
               variants={cardItem}
-              className="flex items-center justify-between px-4 md:px-5 py-3 md:py-3.5 hover:bg-slate-50 transition-colors"
+              className="flex items-center justify-between px-4 md:px-5 py-3 md:py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: tx.category_color + '20' }}>
                   <span className="w-2.5 h-2.5 rounded-full" style={{ background: tx.category_color }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">{tx.description}</p>
-                  <p className="text-xs text-slate-400">{tx.category} · {formatDate(tx.date)}</p>
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{tx.description}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">{tx.category} · {formatRelativeDate(tx.date)}</p>
                 </div>
               </div>
-              <span className={`text-sm font-semibold shrink-0 ml-3 ${tx.type === 'income' ? 'text-emerald-600' : 'text-slate-800'}`}>
+              <span className={`text-sm font-semibold shrink-0 ml-3 ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'}`}>
                 {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
               </span>
             </motion.li>
