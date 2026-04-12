@@ -3,7 +3,7 @@ import {
   LayoutDashboard, ArrowLeftRight, Wallet,
   BarChart3, User, ShieldCheck, TrendingUp, X,
 } from 'lucide-react'
-import { mockUser } from '../../mocks/data'
+import { useAuth } from '../../hooks/useAuth'
 import { getAvatarGradient } from '../../lib/utils'
 
 const navLinks = [
@@ -15,7 +15,12 @@ const navLinks = [
 ]
 
 export default function Sidebar({ isOpen, onClose }) {
-  const gradient = getAvatarGradient(mockUser.full_name)
+  const { profile, session } = useAuth()
+
+  const displayName = profile?.full_name ?? session?.user?.user_metadata?.full_name ?? '…'
+  const email       = session?.user?.email ?? ''
+  const initials    = displayName.split(' ').map(n => n[0]).join('').toUpperCase()
+  const gradient    = getAvatarGradient(displayName)
 
   return (
     <aside className={`
@@ -66,7 +71,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </NavLink>
         ))}
 
-        {mockUser.role === 'admin' && (
+        {profile?.role === 'admin' && (
           <NavLink
             to="/admin"
             onClick={onClose}
@@ -95,13 +100,11 @@ export default function Sidebar({ isOpen, onClose }) {
             className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
             style={{ background: gradient }}
           >
-            <span className="text-white text-xs font-bold">
-              {mockUser.full_name.split(' ').map(n => n[0]).join('')}
-            </span>
+            <span className="text-white text-xs font-bold">{initials}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{mockUser.full_name}</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{mockUser.email}</p>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{displayName}</p>
+            {email && <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{email}</p>}
           </div>
         </div>
       </div>

@@ -1,21 +1,8 @@
-import { useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuthStore } from '../store/authStore'
 
 export function useAuth() {
-  const { session, profile, loading, setSession, clearAuth } = useAuthStore()
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+  const { session, profile, loading } = useAuthStore()
 
   const login = async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -33,7 +20,8 @@ export function useAuth() {
 
   const logout = async () => {
     await supabase.auth.signOut()
-    clearAuth()
+    // Forzar limpieza del estado por si onAuthStateChange no dispara a tiempo
+    useAuthStore.getState().clearAuth()
   }
 
   return { session, profile, loading, login, register, logout }

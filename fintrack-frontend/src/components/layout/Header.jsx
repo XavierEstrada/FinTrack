@@ -1,13 +1,20 @@
 import { Bell, LogOut, Menu, Sun, Moon } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { mockUser } from '../../mocks/data'
+import { useAuth } from '../../hooks/useAuth'
 import { getAvatarGradient } from '../../lib/utils'
 import { useThemeStore } from '../../store/themeStore'
 
 export default function Header({ title, onMenuClick }) {
-  const navigate = useNavigate()
   const { dark, toggle } = useThemeStore()
-  const gradient = getAvatarGradient(mockUser.full_name)
+  const { session, profile, logout } = useAuth()
+
+  const displayName = profile?.full_name ?? session?.user?.user_metadata?.full_name ?? '…'
+  const initials    = displayName.split(' ').map(n => n[0]).join('').toUpperCase()
+  const gradient    = getAvatarGradient(displayName)
+
+  const handleLogout = async () => {
+    await logout()
+    // ProtectedRoute detecta session = null y redirige a /login automáticamente
+  }
 
   return (
     <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 shrink-0">
@@ -44,17 +51,15 @@ export default function Header({ title, onMenuClick }) {
             className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
             style={{ background: gradient }}
           >
-            <span className="text-white text-xs font-bold">
-              {mockUser.full_name.split(' ').map(n => n[0]).join('')}
-            </span>
+            <span className="text-white text-xs font-bold">{initials}</span>
           </div>
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{mockUser.full_name}</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{displayName}</span>
         </div>
 
         <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 hidden md:block" />
 
         <button
-          onClick={() => navigate('/login')}
+          onClick={handleLogout}
           className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
         >
           <LogOut size={16} />

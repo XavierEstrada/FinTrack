@@ -29,3 +29,12 @@ dist-ssr
 
 # Skills
 .skills-lock.json
+
+# .NET build artifacts and Visual Studio cache
+fintrack-backend/.vs/
+fintrack-backend/**/bin/
+fintrack-backend/**/obj/
+
+# .NET secrets — never commit real credentials
+fintrack-backend/**/appsettings.Development.json
+fintrack-backend/**/appsettings.*.local.json
