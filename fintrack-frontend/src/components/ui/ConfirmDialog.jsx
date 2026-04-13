@@ -7,11 +7,13 @@ import { AnimatePresence, motion } from 'framer-motion'
  * Props:
  *  - isOpen: boolean
  *  - onClose: () => void        — cancela sin hacer nada
- *  - onConfirm: () => void      — confirma la acción destructiva
+ *  - onConfirm: () => void      — confirma la acción
  *  - title: string
  *  - description: string
  *  - confirmLabel?: string      — default "Eliminar"
+ *  - loadingLabel?: string      — default "Eliminando…"
  *  - loading?: boolean          — deshabilita botones mientras se procesa
+ *  - variant?: 'danger' | 'warning'  — 'danger' (rojo, default) | 'warning' (ámbar)
  */
 export default function ConfirmDialog({
   isOpen,
@@ -20,8 +22,22 @@ export default function ConfirmDialog({
   title,
   description,
   confirmLabel = 'Eliminar',
+  loadingLabel,
   loading = false,
+  variant = 'danger',
 }) {
+  const styles = variant === 'warning'
+    ? {
+        icon:   'bg-amber-50 dark:bg-amber-900/30',
+        iconFg: 'text-amber-500 dark:text-amber-400',
+        btn:    'bg-amber-500 hover:bg-amber-600',
+      }
+    : {
+        icon:   'bg-rose-50 dark:bg-rose-900/30',
+        iconFg: 'text-rose-500 dark:text-rose-400',
+        btn:    'bg-rose-500 hover:bg-rose-600',
+      }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -45,8 +61,8 @@ export default function ConfirmDialog({
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
             {/* Icono */}
-            <div className="w-11 h-11 rounded-full bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center mb-4">
-              <AlertTriangle size={20} className="text-rose-500 dark:text-rose-400" />
+            <div className={`w-11 h-11 rounded-full ${styles.icon} flex items-center justify-center mb-4`}>
+              <AlertTriangle size={20} className={styles.iconFg} />
             </div>
 
             <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50 mb-1.5">{title}</h2>
@@ -65,9 +81,9 @@ export default function ConfirmDialog({
                 type="button"
                 onClick={onConfirm}
                 disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-rose-500 hover:bg-rose-600 rounded-lg transition-colors disabled:opacity-50"
+                className={`px-4 py-2 text-sm font-medium text-white ${styles.btn} rounded-lg transition-colors disabled:opacity-50`}
               >
-                {loading ? 'Eliminando…' : confirmLabel}
+                {loading ? (loadingLabel ?? 'Eliminando…') : confirmLabel}
               </button>
             </div>
           </motion.div>

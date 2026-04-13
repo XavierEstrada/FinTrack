@@ -1,14 +1,16 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { CalendarRange } from 'lucide-react'
 import Modal from '../ui/Modal'
+import ConfirmDialog from '../ui/ConfirmDialog'
 import CategorySelect from '../ui/CategorySelect'
 import { useCategories } from '../../hooks/useCategories'
 import { useBudgets, useUpsertBudget } from '../../hooks/useBudgets'
 import { useCurrencySymbol } from '../../hooks/useCurrency'
+import { budgetService } from '../../services/budgetService'
 
 const schema = z.object({
   categoryId: z.string().min(1, 'Selecciona una categoría'),
@@ -23,23 +25,28 @@ const errCls = 'text-red-500 text-xs mt-1'
 
 const currentMonth = new Date().toISOString().slice(0, 7)
 
-export default function BudgetModal({ isOpen, onClose, budget = null }) {
+export default function BudgetModal({ isOpen, onClose, budget = null, defaultMonth }) {
   const isEditing      = !!budget
   const currencySymbol = useCurrencySymbol()
   const { data: categories = [], isLoading: loadingCategories } = useCategories()
   const upsertMutation = useUpsertBudget()
+  const [showAnnualConfirm, setShowAnnualConfirm] = useState(false)
+  const [pendingData, setPendingData]             = useState(null)
+  const [cleaning, setCleaning]                   = useState(false)
 
   const expenseCategories = categories.filter(c => c.type === 'expense')
 
   const { register, handleSubmit, reset, watch, control, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { month: currentMonth, isAnnual: false },
+    defaultValues: { month: defaultMonth ?? currentMonth, isAnnual: false },
   })
 
   const isAnnual      = watch('isAnnual')
   const selectedMonth = watch('month')
 
-  // Categorías ya presupuestadas para el mes seleccionado
+  // Categorías ya presupuestadas para el mes seleccionado.
+  // Los presupuestos anuales aparecen en la respuesta de cualquier mes del año,
+  // por lo que bloquean la categoría en todos los meses automáticamente.
   const { data: existingBudgets = [] } = useBudgets(selectedMonth)
   const takenIds = isEditing
     ? new Set()
@@ -58,16 +65,31 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
         isAnnual:   budget.isAnnual ?? false,
       })
     } else {
-      reset({ month: currentMonth, categoryId: '', amount: '', isAnnual: false })
+      reset({ month: defaultMonth ?? currentMonth, categoryId: '', amount: '', isAnnual: false })
     }
-  }, [budget, isOpen])
+  }, [budget, isOpen, defaultMonth])
 
-  const onSubmit = async (data) => {
+  const doSave = async (data) => {
     try {
-      // Annual budgets are stored anchored to January of the selected year
       const monthValue = data.isAnnual
         ? `${data.month.slice(0, 4)}-01-01`
         : `${data.month}-01`
+
+      // If creating as annual, delete any existing monthly budgets for this
+      // category across all 12 months of the selected year first
+      if (!isEditing && data.isAnnual) {
+        setCleaning(true)
+        const year = data.month.slice(0, 4)
+        const months = Array.from({ length: 12 }, (_, i) =>
+          `${year}-${String(i + 1).padStart(2, '0')}`
+        )
+        const results = await Promise.all(
+          months.map(m => budgetService.getAll({ month: m }).then(r => r.data).catch(() => []))
+        )
+        const toDelete = results.flat().filter(b => b.categoryId === data.categoryId && !b.isAnnual)
+        await Promise.allSettled(toDelete.map(b => budgetService.remove(b.id)))
+        setCleaning(false)
+      }
 
       await upsertMutation.mutateAsync({
         categoryId: data.categoryId,
@@ -78,7 +100,17 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
       toast.success(isEditing ? 'Presupuesto actualizado' : 'Presupuesto creado')
       onClose()
     } catch {
+      setCleaning(false)
       toast.error('No se pudo guardar el presupuesto')
+    }
+  }
+
+  const onSubmit = (data) => {
+    if (!isEditing && data.isAnnual) {
+      setPendingData(data)
+      setShowAnnualConfirm(true)
+    } else {
+      doSave(data)
     }
   }
 
@@ -124,27 +156,41 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
         </div>
 
         {/* Annual toggle */}
-        <label className="flex items-start gap-3 cursor-pointer select-none group">
-          <div className="relative mt-0.5">
-            <input
-              {...register('isAnnual')}
-              type="checkbox"
-              className="sr-only peer"
-              disabled={isEditing}
-            />
-            <div className={`w-9 h-5 rounded-full transition-colors peer-checked:bg-indigo-600 bg-slate-200 dark:bg-slate-700 ${isEditing ? 'opacity-50' : ''}`} />
-            <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-              <CalendarRange size={14} className="text-indigo-500" />
-              Presupuesto anual
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-              Se aplica automáticamente a todos los meses del año seleccionado
-            </p>
-          </div>
-        </label>
+        <Controller
+          name="isAnnual"
+          control={control}
+          render={({ field }) => (
+            <div>
+              <label className={`flex items-start gap-3 select-none ${isEditing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                <div className="relative mt-0.5 shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={!!field.value}
+                    onChange={e => !isEditing && field.onChange(e.target.checked)}
+                    disabled={isEditing}
+                  />
+                  <div className={`w-9 h-5 rounded-full transition-colors duration-200 ${field.value ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${field.value ? 'translate-x-4' : ''}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                    <CalendarRange size={14} className="text-indigo-500" />
+                    Presupuesto anual
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                    Se aplica automáticamente a todos los meses del año seleccionado
+                  </p>
+                </div>
+              </label>
+              {isEditing && (
+                <p className="text-xs text-amber-500 dark:text-amber-400 mt-1.5 ml-12">
+                  Para cambiar el tipo debes crear el presupuesto desde cero — al hacerlo como anual se reemplazarán todos los presupuestos mensuales de esa categoría en ese año.
+                </p>
+              )}
+            </div>
+          )}
+        />
 
         <div>
           <label className={label}>{isAnnual ? 'Año' : 'Mes'}</label>
@@ -167,12 +213,23 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
             Cancelar
           </button>
-          <button type="submit" disabled={isSubmitting || allTaken}
+          <button type="submit" disabled={isSubmitting || cleaning || allTaken}
             className="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
-            {isSubmitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear presupuesto'}
+            {cleaning ? 'Preparando…' : isSubmitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear presupuesto'}
           </button>
         </div>
       </form>
+
+      <ConfirmDialog
+        isOpen={showAnnualConfirm}
+        onClose={() => { setShowAnnualConfirm(false); setPendingData(null) }}
+        onConfirm={() => { setShowAnnualConfirm(false); doSave(pendingData) }}
+        title="Crear presupuesto anual"
+        description={`Se eliminarán todos los presupuestos mensuales existentes de esta categoría en ${pendingData?.month?.slice(0, 4) ?? 'ese año'} y se creará un presupuesto anual en su lugar. ¿Deseas continuar?`}
+        confirmLabel="Confirmar"
+        loadingLabel="Procesando…"
+        variant="warning"
+      />
     </Modal>
   )
 }

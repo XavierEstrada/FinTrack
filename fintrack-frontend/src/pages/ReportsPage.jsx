@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Download, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { monthLabel } from '../lib/utils'
 import { useFormatCurrency } from '../hooks/useCurrency'
@@ -267,6 +267,146 @@ export default function ReportsPage() {
   const totalExpenses = byCategory.reduce((s, c) => s + c.total, 0)
   const totalBalance  = trend.reduce((s, d) => s + d.balance, 0)
 
+  const exportCSV = () => {
+    if (!byCategory.length) return
+    const headers = ['Categoría', 'Total', 'Porcentaje']
+    const rows    = byCategory.map(c => [
+      `"${c.categoryName}"`,
+      fmt(c.total),
+      `${Math.round(c.percentage)}%`,
+    ])
+    // BOM UTF-8 + punto y coma como separador → Excel en español lo abre correctamente
+    const bom  = '\ufeff'
+    const csv  = bom + [headers, ...rows].map(r => r.join(';')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `reporte-${currentMonth}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const exportPDF = () => {
+    if (!byCategory.length) return
+    const month    = monthDisplay(currentMonth)
+    const dateStr  = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+
+    const rows = byCategory.map(c => `
+      <tr>
+        <td>
+          <span class="dot" style="background:${c.categoryColor ?? '#94a3b8'}"></span>
+          ${c.categoryName}
+        </td>
+        <td style="text-align:right">${fmt(c.total)}</td>
+        <td style="text-align:right">${Math.round(c.percentage)}%</td>
+        <td style="text-align:right; width:160px">
+          <div class="bar-bg">
+            <div class="bar-fill" style="width:${c.percentage}%;background:${c.categoryColor ?? '#94a3b8'}"></div>
+          </div>
+        </td>
+      </tr>`).join('')
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reporte FinTrack — ${month}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           color: #1e293b; background: #fff; padding: 40px; }
+    header { display: flex; justify-content: space-between; align-items: flex-start;
+             border-bottom: 2px solid #6366f1; padding-bottom: 16px; margin-bottom: 28px; }
+    header h1 { font-size: 22px; font-weight: 700; color: #6366f1; }
+    header p  { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    .summary  { display: flex; gap: 20px; margin-bottom: 28px; }
+    .card     { flex: 1; border: 1px solid #e2e8f0; border-radius: 10px;
+                padding: 14px 18px; }
+    .card-label { font-size: 11px; color: #94a3b8; text-transform: uppercase;
+                  letter-spacing: .05em; margin-bottom: 6px; }
+    .card-value { font-size: 20px; font-weight: 700; color: #1e293b; }
+    .card-value.accent { color: #6366f1; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: #f8fafc; }
+    th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 600;
+         color: #64748b; text-transform: uppercase; letter-spacing: .04em;
+         border-bottom: 1px solid #e2e8f0; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9;
+         vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tfoot td { font-weight: 700; border-top: 2px solid #e2e8f0;
+               padding-top: 12px; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+           margin-right: 8px; vertical-align: middle; }
+    .bar-bg   { background: #f1f5f9; border-radius: 4px; height: 7px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; }
+    footer { margin-top: 32px; font-size: 11px; color: #cbd5e1; text-align: center; }
+    @media print {
+      body { padding: 24px; }
+      @page { margin: 1.5cm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Reporte de gastos</h1>
+      <p>${month}</p>
+    </div>
+    <div style="text-align:right">
+      <p style="font-size:11px;color:#94a3b8">Generado el ${dateStr}</p>
+      <p style="font-size:11px;color:#94a3b8;margin-top:2px">FinTrack</p>
+    </div>
+  </header>
+
+  <div class="summary">
+    <div class="card">
+      <div class="card-label">Total gastado</div>
+      <div class="card-value accent">${fmt(totalExpenses)}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Categorías</div>
+      <div class="card-value">${byCategory.length}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Mayor gasto</div>
+      <div class="card-value">${byCategory[0]?.categoryName ?? '—'}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Categoría</th>
+        <th style="text-align:right">Total</th>
+        <th style="text-align:right">%</th>
+        <th style="text-align:right">Distribución</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr>
+        <td>Total</td>
+        <td style="text-align:right">${fmt(totalExpenses)}</td>
+        <td style="text-align:right">100%</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <footer>Generado con FinTrack · ${dateStr}</footer>
+
+  <script>window.onload = () => { window.print() }<\/script>
+</body>
+</html>`
+
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(html)
+    win.document.close()
+  }
+
   return (
     <div className="space-y-4 md:space-y-5">
       {/* Toolbar */}
@@ -281,24 +421,24 @@ export default function ReportsPage() {
           <span className="font-medium px-2 min-w-[140px] text-center">{monthDisplay(currentMonth)}</span>
           <button onClick={nextMonth} className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors"><ChevronRight size={16} /></button>
         </div>
-        <button
-          className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-          onClick={() => {
-            if (!byCategory.length) return
-            const rows  = [['Categoría', 'Total', '%'], ...byCategory.map(c => [c.categoryName, c.total, c.percentage])]
-            const csv   = rows.map(r => r.join(',')).join('\n')
-            const blob  = new Blob([csv], { type: 'text/csv' })
-            const url   = URL.createObjectURL(blob)
-            const a     = document.createElement('a')
-            a.href      = url
-            a.download  = `reporte-${currentMonth}.csv`
-            a.click()
-            URL.revokeObjectURL(url)
-          }}
-        >
-          <Download size={15} />
-          Exportar CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportCSV}
+            disabled={!byCategory.length}
+            className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download size={15} />
+            CSV
+          </button>
+          <button
+            onClick={exportPDF}
+            disabled={!byCategory.length}
+            className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <FileText size={15} />
+            PDF
+          </button>
+        </div>
       </motion.div>
 
       {/* Line chart — últimos 6 meses */}

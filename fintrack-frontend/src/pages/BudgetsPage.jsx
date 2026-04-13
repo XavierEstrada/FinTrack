@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, CalendarRange, Bookmark } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, CalendarRange, Bookmark, AlertTriangle, Ban, ClipboardCopy } from 'lucide-react'
 import CategoryIcon from '../components/ui/CategoryIcon'
 import { motion } from 'framer-motion'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import { useBudgets, useDeleteBudget } from '../hooks/useBudgets'
 import { useCategories } from '../hooks/useCategories'
 import BudgetModal from '../components/budgets/BudgetModal'
+import QuickCopyModal from '../components/budgets/QuickCopyModal'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 import CategoryFormModal from '../components/categories/CategoryFormModal'
@@ -16,8 +17,16 @@ const cardItem  = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, tra
 
 function progressColor(pct) {
   if (pct >= 100) return 'bg-rose-500'
-  if (pct >= 75)  return 'bg-amber-400'
+  if (pct >= 70)  return 'bg-amber-400'
   return 'bg-emerald-500'
+}
+
+// Devuelve la zona de estado del presupuesto
+function budgetZone(pct, over) {
+  if (over)       return 'exceeded'   // >100%
+  if (pct >= 100) return 'full'       // exactamente 100%
+  if (pct >= 70)  return 'warning'    // 70–99%
+  return 'ok'
 }
 
 function toYearMonth(date) {
@@ -31,16 +40,30 @@ function monthDisplay(ym) {
   return `${label.charAt(0).toUpperCase() + label.slice(1)} ${year}`
 }
 
+const badgeStyles = {
+  ok:       'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',
+  warning:  'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+  full:     'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
+  exceeded: 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
+}
+
 function BudgetCard({ budget, onEdit, onDelete, index }) {
   const fmt       = useFormatCurrency()
   const pct       = budget.amount > 0 ? Math.min((budget.spent / budget.amount) * 100, 100) : 0
   const remaining = budget.amount - budget.spent
   const over      = budget.spent > budget.amount
   const color     = budget.categoryColor ?? '#94a3b8'
+  const zone      = budgetZone(pct, over)
 
   return (
     <motion.div variants={cardItem}
-      className="bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+      className={`bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 ${
+        zone === 'ok'
+          ? 'border-slate-200 dark:border-slate-800'
+          : zone === 'warning'
+            ? 'border-amber-200 dark:border-amber-800/50'
+            : 'border-rose-200 dark:border-rose-800/50'
+      }`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: color + '20' }}>
@@ -65,8 +88,8 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
             className="p-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 hover:bg-rose-100 rounded-md transition-colors">
             <Trash2 size={13} />
           </button>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${over ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-            {Math.round(pct)}%
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badgeStyles[zone]}`}>
+            {Math.round(budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0)}%
           </span>
         </div>
       </div>
@@ -82,14 +105,41 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
         </div>
       </div>
 
+      {/* Alerta de zona */}
+      {zone === 'warning' && (
+        <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-2.5 py-1.5 mb-3 text-xs font-medium">
+          <AlertTriangle size={12} className="shrink-0" />
+          Cerca del límite — solo queda {fmt(remaining)}
+        </div>
+      )}
+      {zone === 'full' && (
+        <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 rounded-lg px-2.5 py-1.5 mb-3 text-xs font-medium">
+          <Ban size={12} className="shrink-0" />
+          Sin presupuesto restante
+        </div>
+      )}
+      {zone === 'exceeded' && (
+        <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 rounded-lg px-2.5 py-1.5 mb-3 text-xs font-medium">
+          <AlertTriangle size={12} className="shrink-0" />
+          Excedido por {fmt(Math.abs(remaining))}
+        </div>
+      )}
+
       <div className="flex items-center justify-between text-xs">
         <div>
           <span className="text-slate-400 dark:text-slate-500">Gastado </span>
           <span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(budget.spent)}</span>
         </div>
         <div className="text-right">
-          <p className={`font-semibold ${over ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-            {over ? `+${fmt(Math.abs(remaining))} excedido` : `${fmt(remaining)} disponible`}
+          <p className={`font-semibold ${
+            zone === 'ok'      ? 'text-emerald-600 dark:text-emerald-400' :
+            zone === 'warning' ? 'text-amber-600 dark:text-amber-400'    :
+                                 'text-rose-600 dark:text-rose-400'
+          }`}>
+            {zone === 'ok'       && `${fmt(remaining)} disponible`}
+            {zone === 'warning'  && `${fmt(remaining)} disponible`}
+            {zone === 'full'     && 'Sin presupuesto restante'}
+            {zone === 'exceeded' && `+${fmt(Math.abs(remaining))} excedido`}
           </p>
           <p className="text-slate-400 dark:text-slate-500">de {fmt(budget.amount)}</p>
         </div>
@@ -106,12 +156,18 @@ export default function BudgetsPage() {
   const [editing, setEditing]             = useState(null)
   const [confirmBudget, setConfirmBudget] = useState(null)
   const [catModalOpen, setCatModalOpen]   = useState(false)
+  const [copyModalOpen, setCopyModalOpen] = useState(false)
 
   const { data: allCategories = [] } = useCategories()
   const userCategories               = allCategories.filter(c => c.isSystem === false)
 
   const month        = toYearMonth(currentDate)
   const { data: rawBudgets = [], isLoading } = useBudgets(month)
+
+  // El botón de copia rápida solo está disponible para el mes actual o el siguiente
+  const todayYM      = toYearMonth(now)
+  const nextYM       = toYearMonth(new Date(now.getFullYear(), now.getMonth() + 1, 1))
+  const canQuickCopy = month === todayYM || month === nextYM
   const budgets = [...rawBudgets].sort((a, b) => a.categoryName.localeCompare(b.categoryName, 'es'))
   const deleteMutation = useDeleteBudget()
 
@@ -143,7 +199,7 @@ export default function BudgetsPage() {
           <span className="font-medium px-2 min-w-[120px] text-center">{monthDisplay(month)}</span>
           <button onClick={nextMonth} className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors"><ChevronRight size={16} /></button>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             onClick={() => setCatModalOpen(true)}
             disabled={userCategories.length >= 3}
@@ -154,6 +210,17 @@ export default function BudgetsPage() {
             <span className="hidden sm:inline">Categoría personalizada</span>
             <span className="sm:hidden">Cat. personalizada</span>
           </button>
+          {canQuickCopy && (
+            <button
+              onClick={() => setCopyModalOpen(true)}
+              title="Copiar presupuestos del mes anterior"
+              className="flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-3 py-2 rounded-lg hover:border-indigo-400 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+            >
+              <ClipboardCopy size={14} />
+              <span className="hidden sm:inline">Copiar del mes anterior</span>
+              <span className="sm:hidden">Copiar</span>
+            </button>
+          )}
           <button onClick={openNew}
             className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
             <Plus size={16} />Nuevo presupuesto
@@ -191,7 +258,14 @@ export default function BudgetsPage() {
         </motion.div>
       )}
 
-      <BudgetModal isOpen={modalOpen} onClose={() => setModalOpen(false)} budget={editing} />
+      <BudgetModal isOpen={modalOpen} onClose={() => setModalOpen(false)} budget={editing} defaultMonth={month} />
+
+      <QuickCopyModal
+        isOpen={copyModalOpen}
+        onClose={() => setCopyModalOpen(false)}
+        targetMonth={month}
+        existingBudgets={budgets}
+      />
 
       <CategoryFormModal
         isOpen={catModalOpen}
@@ -204,7 +278,11 @@ export default function BudgetsPage() {
         onConfirm={confirmDelete}
         loading={deleteMutation.isPending}
         title="Eliminar presupuesto"
-        description={`¿Estás seguro de que quieres eliminar el presupuesto de ${confirmBudget?.categoryName}? Esta acción no se puede deshacer.`}
+        description={
+          confirmBudget?.isAnnual
+            ? `¿Estás seguro de que quieres eliminar el presupuesto anual de ${confirmBudget?.categoryName}? Se eliminará de todos los meses de ${confirmBudget?.month?.slice(0, 4) ?? 'ese año'}. Esta acción no se puede deshacer.`
+            : `¿Estás seguro de que quieres eliminar el presupuesto de ${confirmBudget?.categoryName}? Esta acción no se puede deshacer.`
+        }
       />
     </div>
   )
