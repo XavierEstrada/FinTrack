@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<Budget> Budgets => Set<Budget>();
+    public DbSet<SavingsGoal> SavingsGoals => Set<SavingsGoal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,6 +69,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(b => b.IsAnnual).HasColumnName("is_annual");
             e.Property(b => b.CreatedAt).HasColumnName("created_at");
             e.HasOne(b => b.Category).WithMany().HasForeignKey(b => b.CategoryId);
+        });
+
+        modelBuilder.Entity<SavingsGoal>(e =>
+        {
+            e.ToTable("savings_goals");
+            e.HasKey(g => g.Id);
+            e.Property(g => g.Id).HasColumnName("id");
+            e.Property(g => g.UserId).HasColumnName("user_id");
+            e.Property(g => g.Name).HasColumnName("name");
+            e.Property(g => g.TargetAmount).HasColumnName("target_amount");
+            e.Property(g => g.Month).HasColumnName("month");
+            e.Property(g => g.CreatedAt).HasColumnName("created_at");
         });
     }
 }

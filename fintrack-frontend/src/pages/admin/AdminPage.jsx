@@ -10,6 +10,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import SystemCategoryFormModal from '../../components/admin/SystemCategoryFormModal'
 import { useAdminStats, useAdminUsers, useDeleteSystemCategory } from '../../hooks/useAdmin'
 import { useCategories } from '../../hooks/useCategories'
+import { SkeletonListRow } from '../../components/ui/Skeleton'
 
 const container = {
   hidden: {},
@@ -119,7 +120,9 @@ export default function AdminPage() {
         </div>
 
         {loadingCats ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">Cargando…</p>
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonListRow key={i} />)}
+          </div>
         ) : systemCategories.length === 0 ? (
           <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">Sin categorías del sistema</p>
         ) : (
@@ -170,7 +173,9 @@ export default function AdminPage() {
         </div>
 
         {loadingUsers ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">Cargando…</p>
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonListRow key={i} />)}
+          </div>
         ) : users.length === 0 ? (
           <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">Sin usuarios</p>
         ) : (

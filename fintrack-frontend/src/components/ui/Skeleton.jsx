@@ -48,3 +48,24 @@ export function SkeletonBudgetCard() {
     </div>
   )
 }
+
+export function SkeletonListRow() {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
+      <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
+      <div className="flex-1 space-y-1.5">
+        <Skeleton className="h-3 w-32" />
+        <Skeleton className="h-2.5 w-20" />
+      </div>
+      <Skeleton className="h-6 w-16 rounded-md" />
+    </div>
+  )
+}
+
+export function SkeletonCardGrid({ count = 3 }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+      {Array.from({ length: count }).map((_, i) => <SkeletonBudgetCard key={i} />)}
+    </div>
+  )
+}

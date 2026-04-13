@@ -3,7 +3,6 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuthStore } from '../../store/authStore'
 
 async function fetchProfile(userId) {
-  console.log('[AuthProvider] fetchProfile →', userId)
   try {
     const { data, error } = await supabase
       .from('profiles')
@@ -11,7 +10,6 @@ async function fetchProfile(userId) {
       .eq('id', userId)
       .maybeSingle()
     if (error) console.error('[AuthProvider] fetchProfile error:', error)
-    console.log('[AuthProvider] fetchProfile result →', JSON.stringify(data))
     return data
   } catch (e) {
     console.error('[AuthProvider] fetchProfile EXCEPTION:', e)
@@ -41,7 +39,6 @@ export default function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('[AuthProvider] onAuthStateChange event:', event, '| session:', !!session)
         if (event === 'SIGNED_OUT') {
           store.clearAuth()
           return

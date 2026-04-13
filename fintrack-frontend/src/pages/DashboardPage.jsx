@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { formatRelativeDate, monthLabel } from '../lib/utils'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
+import CategoryPieChart from '../components/ui/CategoryPieChart'
 import { useSummary, useByCategory, useMonthlyTrend } from '../hooks/useReports'
 import { useTransactions } from '../hooks/useTransactions'
 
@@ -63,47 +64,6 @@ function BarChart({ data = [] }) {
   )
 }
 
-function PieChart({ data = [] }) {
-  const fmt = useFormatCurrency()
-  if (!data.length) return (
-    <div className="flex items-center justify-center h-28 text-xs text-slate-400 dark:text-slate-500">
-      Sin gastos en este período
-    </div>
-  )
-
-  const cumPcts  = data.map((_, i) => data.slice(0, i).reduce((s, c) => s + c.percentage, 0))
-  const gradient = data.map((c, i) =>
-    `${c.categoryColor ?? '#94a3b8'} ${cumPcts[i]}% ${cumPcts[i] + c.percentage}%`
-  ).join(', ')
-
-  return (
-    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-      <motion.div
-        className="w-28 h-28 sm:w-32 sm:h-32 rounded-full shrink-0"
-        style={{ background: `conic-gradient(${gradient})` }}
-        initial={{ scale: 0, rotate: -90, opacity: 0 }}
-        animate={{ scale: 1, rotate: 0,   opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.2, ease: 'backOut' }}
-      />
-      <motion.ul
-        className="space-y-2 w-full"
-        variants={container}
-        initial="hidden"
-        animate="show"
-      >
-        {data.map(c => (
-          <motion.li key={c.categoryId ?? c.categoryName} variants={cardItem} className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.categoryColor ?? '#94a3b8' }} />
-              <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">{c.categoryName}</span>
-            </div>
-            <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 shrink-0">{fmt(c.total)}</span>
-          </motion.li>
-        ))}
-      </motion.ul>
-    </div>
-  )
-}
 
 export default function DashboardPage() {
   const fmt = useFormatCurrency()
@@ -191,7 +151,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">Gastos por categoría</p>
           <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Mes actual</p>
-          <PieChart data={byCategory} />
+          <CategoryPieChart data={byCategory} fmt={fmt} size={220} emptyMessage="Sin gastos en este período" />
         </div>
       </motion.div>
 

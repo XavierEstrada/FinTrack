@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight, Bookmark } from 'lucide-react'
+import { SkeletonRow } from '../components/ui/Skeleton'
 import { toast } from 'sonner'
 import { formatDate } from '../lib/utils'
 import { useFormatCurrency } from '../hooks/useCurrency'
@@ -124,13 +125,7 @@ export default function TransactionsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-              {isLoading && (
-                <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
-                    Cargando…
-                  </td>
-                </tr>
-              )}
+              {isLoading && Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
 
               {isError && (
                 <tr>

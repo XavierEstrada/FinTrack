@@ -50,6 +50,7 @@ builder.Services.AddScoped<BudgetService>();
 builder.Services.AddScoped<ReportService>();
 builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<SavingsGoalService>();
 builder.Services.AddHttpClient();
 
 // ── Controllers + OpenAPI ────────────────────────────────────────────────────

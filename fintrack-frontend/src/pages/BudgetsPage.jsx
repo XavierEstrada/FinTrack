@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, CalendarRange, Bookmark, AlertTriangle, Ban, ClipboardCopy } from 'lucide-react'
+import { SkeletonCardGrid } from '../components/ui/Skeleton'
 import CategoryIcon from '../components/ui/CategoryIcon'
 import { motion } from 'framer-motion'
 import { useFormatCurrency } from '../hooks/useCurrency'
@@ -244,7 +245,7 @@ export default function BudgetsPage() {
       </motion.div>
 
       {isLoading ? (
-        <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">Cargando…</p>
+        <SkeletonCardGrid count={3} />
       ) : (
         <motion.div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4" variants={container} initial="hidden" animate="show">
           {budgets.map((b, i) => (

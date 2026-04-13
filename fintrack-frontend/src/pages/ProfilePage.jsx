@@ -332,80 +332,13 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5 items-start">
 
-      {/* ── Columna izquierda ─────────────────────────────────────────── */}
-      <div className="space-y-4">
+      {/* ── Columna izquierda — cards grandes + eliminar cuenta al fondo ── */}
+      <div className="flex flex-col gap-5">
 
-        {/* Avatar */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          {/* Franja de color */}
-          <div className="h-20" style={{ background: gradient }} />
-          {/* Contenido */}
-          <div className="px-6 pb-6">
-            {/* Avatar superpuesto */}
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold border-4 border-white dark:border-slate-900 -mt-8 mb-3 shrink-0"
-              style={{ background: gradient }}
-            >
-              {initials || '?'}
-            </div>
-            <p className="text-base font-semibold text-slate-900 dark:text-slate-50 leading-tight truncate">
-              {fullName || '—'}
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">{email}</p>
-            {profile?.role === 'admin' && (
-              <span className="inline-flex items-center mt-2 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 px-2 py-0.5 rounded-full">
-                Administrador
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Contraseña */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center shrink-0">
-              <KeyRound size={15} className="text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Contraseña</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Última actualización desconocida</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowPasswordModal(true)}
-            className="w-full flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-          >
-            <KeyRound size={14} />
-            Cambiar contraseña
-          </button>
-        </div>
-
-        {/* Zona de peligro */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-rose-200 dark:border-rose-900/50 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950 flex items-center justify-center shrink-0">
-              <AlertTriangle size={15} className="text-rose-500 dark:text-rose-400" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Zona de peligro</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Acciones irreversibles</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="w-full flex items-center justify-center gap-2 text-sm font-medium text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-4 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-          >
-            Eliminar cuenta
-          </button>
-        </div>
-
-      </div>
-
-      {/* ── Columna derecha ───────────────────────────────────────────── */}
-      <div className="space-y-5">
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        {/* Información personal */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
           <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Información personal</p>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Actualiza tus datos de perfil y preferencias</p>
@@ -552,6 +485,72 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+        {/* Zona de peligro — siempre al fondo de la columna izquierda */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-rose-200 dark:border-rose-900/50 shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950 flex items-center justify-center shrink-0">
+              <AlertTriangle size={15} className="text-rose-500 dark:text-rose-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Zona de peligro</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Acciones irreversibles</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="w-full flex items-center justify-center gap-2 text-sm font-medium text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-4 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+          >
+            Eliminar cuenta
+          </button>
+        </div>
+
+      </div>{/* fin columna izquierda */}
+
+      {/* ── Columna derecha — cards pequeños ─────────────────────────── */}
+      <div className="flex flex-col gap-4">
+
+        {/* Avatar */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="h-20" style={{ background: gradient }} />
+          <div className="px-6 pb-6">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold border-4 border-white dark:border-slate-900 -mt-8 mb-3 shrink-0"
+              style={{ background: gradient }}
+            >
+              {initials || '?'}
+            </div>
+            <p className="text-base font-semibold text-slate-900 dark:text-slate-50 leading-tight truncate">
+              {fullName || '—'}
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">{email}</p>
+            {profile?.role === 'admin' && (
+              <span className="inline-flex items-center mt-2 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 px-2 py-0.5 rounded-full">
+                Administrador
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Contraseña */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center shrink-0">
+              <KeyRound size={15} className="text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Contraseña</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Última actualización desconocida</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="w-full flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+          >
+            <KeyRound size={14} />
+            Cambiar contraseña
+          </button>
+        </div>
 
       </div>{/* fin columna derecha */}
 

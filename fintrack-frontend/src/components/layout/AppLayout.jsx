@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, useLocation, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { LayoutDashboard, ArrowLeftRight, Wallet, BarChart3, User, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, Wallet, BarChart3, User, ShieldCheck, PiggyBank } from 'lucide-react'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { useAuthStore } from '../../store/authStore'
@@ -10,15 +10,19 @@ const titles = {
   '/dashboard':    'Dashboard',
   '/transactions': 'Transacciones',
   '/budgets':      'Presupuestos',
+  '/savings':      'Ahorros',
   '/reports':      'Reportes',
   '/profile':      'Mi Perfil',
   '/admin':        'Administración',
 }
 
+const APP_NAME = 'FinTrack'
+
 const baseLinks = [
   { to: '/dashboard',    label: 'Inicio',        icon: LayoutDashboard },
   { to: '/transactions', label: 'Transacciones', icon: ArrowLeftRight  },
   { to: '/budgets',      label: 'Presupuestos',  icon: Wallet          },
+  { to: '/savings',      label: 'Ahorros',       icon: PiggyBank       },
   { to: '/reports',      label: 'Reportes',      icon: BarChart3       },
   { to: '/profile',      label: 'Perfil',        icon: User            },
 ]
@@ -33,8 +37,12 @@ const pageVariants = {
 
 export default function AppLayout() {
   const location    = useLocation()
-  const title       = titles[location.pathname] ?? 'FinTrack'
+  const title       = titles[location.pathname] ?? APP_NAME
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    document.title = title === APP_NAME ? APP_NAME : `${title} | ${APP_NAME}`
+  }, [title])
   const profile     = useAuthStore(s => s.profile)
   const isAdmin     = profile?.role === 'admin'
   const bottomLinks = isAdmin ? [...baseLinks, adminLink] : baseLinks

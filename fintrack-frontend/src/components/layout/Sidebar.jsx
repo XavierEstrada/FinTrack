@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, ArrowLeftRight, Wallet,
-  BarChart3, User, ShieldCheck, TrendingUp, X,
+  BarChart3, User, ShieldCheck, TrendingUp, X, PiggyBank,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { getAvatarGradient } from '../../lib/utils'
@@ -10,6 +10,7 @@ const navLinks = [
   { to: '/dashboard',    label: 'Dashboard',     icon: LayoutDashboard },
   { to: '/transactions', label: 'Transacciones', icon: ArrowLeftRight  },
   { to: '/budgets',      label: 'Presupuestos',  icon: Wallet          },
+  { to: '/savings',      label: 'Ahorros',       icon: PiggyBank       },
   { to: '/reports',      label: 'Reportes',      icon: BarChart3       },
   { to: '/profile',      label: 'Perfil',        icon: User            },
 ]

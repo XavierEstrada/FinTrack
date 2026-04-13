@@ -39,6 +39,10 @@ public class MappingProfile : AutoMapper.Profile
             .ForMember(d => d.CategoryType,  o => o.MapFrom(s => s.Category != null ? s.Category.Type  : string.Empty))
             .ForMember(d => d.Spent, o => o.Ignore());   // calculado en BudgetService
 
+        // ── SavingsGoals ─────────────────────────────────────────────────────
+        CreateMap<SavingsGoal, SavingsGoalDto>()
+            .ForMember(d => d.Saved, o => o.Ignore());   // calculado en SavingsGoalService
+
         // ── Profile ──────────────────────────────────────────────────────────
         CreateMap<Models.Profile, ProfileDto>();
 
