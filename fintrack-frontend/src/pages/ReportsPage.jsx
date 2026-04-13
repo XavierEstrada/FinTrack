@@ -6,6 +6,60 @@ import { useFormatCurrency } from '../hooks/useCurrency'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
 import { useByCategory, useMonthlyTrend } from '../hooks/useReports'
 
+const pieContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+}
+const pieItem = {
+  hidden: { opacity: 0, x: -8 },
+  show:   { opacity: 1, x: 0, transition: { duration: 0.22, ease: 'easeOut' } },
+}
+
+function PieChart({ data = [], fmt }) {
+  if (!data.length) return (
+    <div className="flex items-center justify-center h-32 text-xs text-slate-400 dark:text-slate-500">
+      Sin gastos para este mes
+    </div>
+  )
+
+  const cumPcts  = data.map((_, i) => data.slice(0, i).reduce((s, c) => s + c.percentage, 0))
+  const gradient = data.map((c, i) =>
+    `${c.categoryColor ?? '#94a3b8'} ${cumPcts[i]}% ${cumPcts[i] + c.percentage}%`
+  ).join(', ')
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-8">
+      <motion.div
+        className="w-36 h-36 rounded-full shrink-0"
+        style={{ background: `conic-gradient(${gradient})` }}
+        initial={{ scale: 0, rotate: -90, opacity: 0 }}
+        animate={{ scale: 1, rotate: 0,   opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.1, ease: 'backOut' }}
+      />
+      <motion.ul
+        className="space-y-2 w-full"
+        variants={pieContainer}
+        initial="hidden"
+        animate="show"
+      >
+        {data.map(c => (
+          <motion.li key={c.categoryId ?? c.categoryName} variants={pieItem}
+            className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.categoryColor ?? '#94a3b8' }} />
+              <span className="text-xs text-slate-600 dark:text-slate-400 truncate">{c.categoryName}</span>
+            </div>
+            <div className="text-right shrink-0">
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{fmt(c.total)}</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 ml-1.5">{Math.round(c.percentage)}%</span>
+            </div>
+          </motion.li>
+        ))}
+      </motion.ul>
+    </div>
+  )
+}
+
 const container = {
   hidden: {},
   show: { transition: { staggerChildren: 0.06 } },
@@ -178,6 +232,18 @@ export default function ReportsPage() {
             ))}
           </div>
         )}
+      </motion.div>
+
+      {/* Pie chart — gastos por categoría del mes */}
+      <motion.div
+        className="bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 shadow-sm"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Gastos por categoría</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 mb-5">{monthDisplay(currentMonth)}</p>
+        <PieChart data={byCategory} fmt={fmt} />
       </motion.div>
 
       {/* Category table */}

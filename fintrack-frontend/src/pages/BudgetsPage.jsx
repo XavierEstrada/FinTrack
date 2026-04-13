@@ -1,10 +1,14 @@
 import { useState } from 'react'
-import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, CalendarRange } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, CalendarRange, Bookmark } from 'lucide-react'
+import CategoryIcon from '../components/ui/CategoryIcon'
 import { motion } from 'framer-motion'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import { useBudgets, useDeleteBudget } from '../hooks/useBudgets'
+import { useCategories } from '../hooks/useCategories'
 import BudgetModal from '../components/budgets/BudgetModal'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
+import CategoryFormModal from '../components/categories/CategoryFormModal'
 import { toast } from 'sonner'
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } }
@@ -40,7 +44,9 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: color + '20' }}>
-            <span className="w-3 h-3 rounded-full" style={{ background: color }} />
+            <div style={{ color }}>
+              <CategoryIcon name={budget.categoryIcon} size={18} />
+            </div>
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{budget.categoryName}</p>
@@ -96,11 +102,17 @@ export default function BudgetsPage() {
   const fmt = useFormatCurrency()
   const now = new Date()
   const [currentDate, setCurrentDate] = useState(now)
-  const [modalOpen, setModalOpen]     = useState(false)
-  const [editing, setEditing]         = useState(null)
+  const [modalOpen, setModalOpen]         = useState(false)
+  const [editing, setEditing]             = useState(null)
+  const [confirmBudget, setConfirmBudget] = useState(null)
+  const [catModalOpen, setCatModalOpen]   = useState(false)
+
+  const { data: allCategories = [] } = useCategories()
+  const userCategories               = allCategories.filter(c => c.isSystem === false)
 
   const month        = toYearMonth(currentDate)
-  const { data: budgets = [], isLoading } = useBudgets(month)
+  const { data: rawBudgets = [], isLoading } = useBudgets(month)
+  const budgets = [...rawBudgets].sort((a, b) => a.categoryName.localeCompare(b.categoryName, 'es'))
   const deleteMutation = useDeleteBudget()
 
   const prevMonth = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
@@ -109,11 +121,12 @@ export default function BudgetsPage() {
   const openNew  = ()  => { setEditing(null); setModalOpen(true) }
   const openEdit = (b) => { setEditing(b);    setModalOpen(true) }
 
-  const handleDelete = (b) => {
-    if (!window.confirm(`¿Eliminar el presupuesto de ${b.categoryName}?`)) return
-    deleteMutation.mutate(b.id, {
-      onSuccess: () => toast.success('Presupuesto eliminado'),
-      onError:   () => toast.error('No se pudo eliminar el presupuesto'),
+  const handleDelete = (b) => setConfirmBudget(b)
+
+  const confirmDelete = () => {
+    deleteMutation.mutate(confirmBudget.id, {
+      onSuccess: () => { toast.success('Presupuesto eliminado'); setConfirmBudget(null) },
+      onError:   () => { toast.error('No se pudo eliminar el presupuesto'); setConfirmBudget(null) },
     })
   }
 
@@ -130,10 +143,22 @@ export default function BudgetsPage() {
           <span className="font-medium px-2 min-w-[120px] text-center">{monthDisplay(month)}</span>
           <button onClick={nextMonth} className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors"><ChevronRight size={16} /></button>
         </div>
-        <button onClick={openNew}
-          className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-          <Plus size={16} />Nuevo presupuesto
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setCatModalOpen(true)}
+            disabled={userCategories.length >= 3}
+            title={userCategories.length >= 3 ? 'Límite de 3 categorías alcanzado' : 'Agregar categoría personalizada'}
+            className="flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 rounded-lg hover:border-indigo-400 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Bookmark size={14} />
+            <span className="hidden sm:inline">Categoría personalizada</span>
+            <span className="sm:hidden">Cat. personalizada</span>
+          </button>
+          <button onClick={openNew}
+            className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+            <Plus size={16} />Nuevo presupuesto
+          </button>
+        </div>
       </motion.div>
 
       <motion.div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4" variants={container} initial="hidden" animate="show">
@@ -167,6 +192,20 @@ export default function BudgetsPage() {
       )}
 
       <BudgetModal isOpen={modalOpen} onClose={() => setModalOpen(false)} budget={editing} />
+
+      <CategoryFormModal
+        isOpen={catModalOpen}
+        onClose={() => setCatModalOpen(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmBudget}
+        onClose={() => setConfirmBudget(null)}
+        onConfirm={confirmDelete}
+        loading={deleteMutation.isPending}
+        title="Eliminar presupuesto"
+        description={`¿Estás seguro de que quieres eliminar el presupuesto de ${confirmBudget?.categoryName}? Esta acción no se puede deshacer.`}
+      />
     </div>
   )
 }

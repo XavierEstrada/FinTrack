@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight, Bookmark } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDate } from '../lib/utils'
 import { useFormatCurrency } from '../hooks/useCurrency'
@@ -7,6 +7,8 @@ import { useTransactions, useDeleteTransaction } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import TransactionModal from '../components/transactions/TransactionModal'
 import CategoryIcon from '../components/ui/CategoryIcon'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
+import CategoryFormModal from '../components/categories/CategoryFormModal'
 
 const LIMIT = 10
 
@@ -20,6 +22,8 @@ export default function TransactionsPage() {
   const [page, setPage]                     = useState(1)
   const [modalOpen, setModalOpen]           = useState(false)
   const [editing, setEditing]               = useState(null)
+  const [confirmTx, setConfirmTx]           = useState(null)
+  const [catModalOpen, setCatModalOpen]     = useState(false)
 
   const params = {
     page,
@@ -32,6 +36,7 @@ export default function TransactionsPage() {
   const { data, isLoading, isError } = useTransactions(params)
   const { data: categories = [] }    = useCategories()
   const deleteMutation               = useDeleteTransaction()
+  const userCategories               = categories.filter(c => c.isSystem === false)
 
   const transactions = data?.data  ?? []
   const total        = data?.total ?? 0
@@ -40,11 +45,12 @@ export default function TransactionsPage() {
   const openNew  = ()   => { setEditing(null); setModalOpen(true) }
   const openEdit = (tx) => { setEditing(tx);   setModalOpen(true) }
 
-  const handleDelete = (tx) => {
-    if (!window.confirm(`¿Eliminar "${tx.description}"?`)) return
-    deleteMutation.mutate(tx.id, {
-      onSuccess: () => toast.success('Transacción eliminada'),
-      onError:   () => toast.error('No se pudo eliminar la transacción'),
+  const handleDelete = (tx) => setConfirmTx(tx)
+
+  const confirmDelete = () => {
+    deleteMutation.mutate(confirmTx.id, {
+      onSuccess: () => { toast.success('Transacción eliminada'); setConfirmTx(null) },
+      onError:   () => { toast.error('No se pudo eliminar la transacción'); setConfirmTx(null) },
     })
   }
 
@@ -59,7 +65,7 @@ export default function TransactionsPage() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex flex-1 items-center gap-2 flex-wrap">
 
-          <div className="relative flex-1 min-w-[160px]">
+          <div className="relative min-w-[120px] flex-1">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
@@ -81,6 +87,17 @@ export default function TransactionsPage() {
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+
+          <button
+            onClick={() => setCatModalOpen(true)}
+            disabled={userCategories.length >= 3}
+            title={userCategories.length >= 3 ? 'Límite de 3 categorías alcanzado' : 'Agregar categoría personalizada'}
+            className="flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 rounded-lg hover:border-indigo-400 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+          >
+            <Bookmark size={14} />
+            <span className="hidden sm:inline">Categoría personalizada</span>
+            <span className="sm:hidden">Cat. personalizada</span>
+          </button>
         </div>
 
         <button
@@ -255,6 +272,20 @@ export default function TransactionsPage() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         transaction={editing}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmTx}
+        onClose={() => setConfirmTx(null)}
+        onConfirm={confirmDelete}
+        loading={deleteMutation.isPending}
+        title="Eliminar transacción"
+        description={`¿Estás seguro de que quieres eliminar "${confirmTx?.description}"? Esta acción no se puede deshacer.`}
+      />
+
+      <CategoryFormModal
+        isOpen={catModalOpen}
+        onClose={() => setCatModalOpen(false)}
       />
     </div>
   )

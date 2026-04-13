@@ -3,12 +3,18 @@ import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Save, AlertTriangle, Loader2, KeyRound, Eye, EyeOff } from 'lucide-react'
+import { Save, AlertTriangle, Loader2, KeyRound, Eye, EyeOff, Plus, Pencil, Trash2, Bookmark } from 'lucide-react'
+
 import { toast } from 'sonner'
 import { useAuthStore } from '../store/authStore'
 import { profileService } from '../services/profileService'
 import { getAvatarGradient } from '../lib/utils'
 import { supabase } from '../lib/supabaseClient'
+import { useCategories, useDeleteCategory } from '../hooks/useCategories'
+import CategoryFormModal from '../components/categories/CategoryFormModal'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
+
+const MAX_CUSTOM = 3
 
 const currencies = [
   { code: 'USD', label: 'Dólar estadounidense (USD · $)'  },
@@ -255,10 +261,31 @@ function DeleteAccountModal({ email, onClose, onConfirmed }) {
 export default function ProfilePage() {
   const { profile, session, setProfile, clearAuth } = useAuthStore()
 
-  const [fullName, setFullName]               = useState(profile?.full_name ?? '')
-  const [currency, setCurrency]               = useState(profile?.currency  ?? 'USD')
-  const [showDeleteModal, setShowDeleteModal]   = useState(false)
+  const [fullName, setFullName]                   = useState(profile?.full_name ?? '')
+  const [currency, setCurrency]                   = useState(profile?.currency  ?? 'USD')
+  const [showDeleteModal, setShowDeleteModal]     = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [catModalOpen, setCatModalOpen]           = useState(false)
+  const [editingCat, setEditingCat]               = useState(null)
+  const [confirmCat, setConfirmCat]               = useState(null)
+
+  const { data: allCategories = [] } = useCategories()
+  const deleteCategoryMutation       = useDeleteCategory()
+  const userCategories               = allCategories.filter(c => c.isSystem === false)
+
+  const openNewCat  = ()  => { setEditingCat(null); setCatModalOpen(true) }
+  const openEditCat = (c) => { setEditingCat(c);    setCatModalOpen(true) }
+
+  const confirmDeleteCat = () => {
+    deleteCategoryMutation.mutate(confirmCat.id, {
+      onSuccess: () => { toast.success('Categoría eliminada'); setConfirmCat(null) },
+      onError:   (err) => {
+        const msg = err?.response?.data
+        toast.error(typeof msg === 'string' ? msg : 'No se pudo eliminar la categoría')
+        setConfirmCat(null)
+      },
+    })
+  }
 
   const email    = session?.user?.email ?? ''
   const gradient = getAvatarGradient(fullName || email || 'U')
@@ -376,7 +403,8 @@ export default function ProfilePage() {
 
       </div>
 
-      {/* ── Columna derecha — formulario ──────────────────────────────── */}
+      {/* ── Columna derecha ───────────────────────────────────────────── */}
+      <div className="space-y-5">
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
           <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Información personal</p>
@@ -438,6 +466,95 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* ── Mis categorías ────────────────────────────────────────────── */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Mis categorías</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+              Categorías personalizadas para organizar tus finanzas
+            </p>
+          </div>
+          <button
+            onClick={openNewCat}
+            disabled={userCategories.length >= MAX_CUSTOM}
+            className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+          >
+            <Plus size={14} />
+            Nueva
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Barra de progreso */}
+          <div>
+            <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mb-1.5">
+              <span>{userCategories.length} de {MAX_CUSTOM} categorías usadas</span>
+              <span className={userCategories.length >= MAX_CUSTOM ? 'text-amber-500 font-medium' : ''}>
+                {userCategories.length}/{MAX_CUSTOM}
+              </span>
+            </div>
+            <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  userCategories.length >= MAX_CUSTOM ? 'bg-amber-400' : 'bg-indigo-500'
+                }`}
+                style={{ width: `${(userCategories.length / MAX_CUSTOM) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Lista */}
+          {userCategories.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <Bookmark size={18} className="text-slate-400 dark:text-slate-500" />
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Aún no tienes categorías personalizadas</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Crea hasta {MAX_CUSTOM} para organizar mejor tus finanzas</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-50 dark:divide-slate-800">
+              {userCategories.map(cat => (
+                <li key={cat.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: (cat.color ?? '#06b6d4') + '25' }}>
+                    <Bookmark size={16} style={{ color: cat.color ?? '#06b6d4' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{cat.name}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      {cat.type === 'expense' ? 'Gasto' : 'Ingreso'}
+                    </p>
+                  </div>
+                  <div className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color ?? '#06b6d4' }} />
+                  <button
+                    onClick={() => openEditCat(cat)}
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-md transition-colors"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={() => setConfirmCat(cat)}
+                    className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-md transition-colors"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {userCategories.length >= MAX_CUSTOM && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+              Alcanzaste el límite de {MAX_CUSTOM} categorías personalizadas.
+            </p>
+          )}
+        </div>
+      </div>
+
+      </div>{/* fin columna derecha */}
+
       {showPasswordModal && (
         <ChangePasswordModal
           email={email}
@@ -453,6 +570,21 @@ export default function ProfilePage() {
           onConfirmed={handleDeleteConfirmed}
         />
       )}
+
+      <CategoryFormModal
+        isOpen={catModalOpen}
+        onClose={() => setCatModalOpen(false)}
+        category={editingCat}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmCat}
+        onClose={() => setConfirmCat(null)}
+        onConfirm={confirmDeleteCat}
+        loading={deleteCategoryMutation.isPending}
+        title="Eliminar categoría"
+        description={`¿Eliminar la categoría "${confirmCat?.name}"? Si tiene transacciones asociadas no podrá eliminarse.`}
+      />
     </div>
   )
 }

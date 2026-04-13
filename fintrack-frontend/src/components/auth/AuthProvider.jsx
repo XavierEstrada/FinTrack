@@ -3,13 +3,20 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuthStore } from '../../store/authStore'
 
 async function fetchProfile(userId) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle()
-  if (error) console.error('[AuthProvider] fetchProfile error:', error)
-  return data
+  console.log('[AuthProvider] fetchProfile →', userId)
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle()
+    if (error) console.error('[AuthProvider] fetchProfile error:', error)
+    console.log('[AuthProvider] fetchProfile result →', JSON.stringify(data))
+    return data
+  } catch (e) {
+    console.error('[AuthProvider] fetchProfile EXCEPTION:', e)
+    return null
+  }
 }
 
 // Helpers que leen siempre el estado actual del store sin crear dependencias de closure
@@ -33,7 +40,8 @@ export default function AuthProvider({ children }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        console.log('[AuthProvider] onAuthStateChange event:', event, '| session:', !!session)
         if (event === 'SIGNED_OUT') {
           store.clearAuth()
           return
@@ -50,10 +58,14 @@ export default function AuthProvider({ children }) {
 
         store.setSession(session)
 
-        // Refrescar perfil solo en eventos de autenticación real, no en TOKEN_REFRESHED
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          const profile = await fetchProfile(session.user.id)
-          store.setProfile(profile)
+        // Diferir la query con setTimeout para evitar el deadlock de Supabase:
+        // supabase.from() dentro de un callback de onAuthStateChange queda colgada
+        // porque el cliente espera que el estado de auth se estabilice primero.
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+          setTimeout(async () => {
+            const profile = await fetchProfile(session.user.id)
+            store.setProfile(profile)
+          }, 0)
         }
       }
     )

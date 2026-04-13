@@ -5,6 +5,17 @@ export function formatCurrency(amount, currency = 'USD') {
   }).format(amount)
 }
 
+export function getCurrencySymbol(currency = 'USD') {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })
+    .formatToParts(0)
+    .find(p => p.type === 'currency')?.value ?? currency
+}
+
 // Parsea fechas tipo "2026-04-10" evitando desfase por zona horaria
 function parseDate(date) {
   if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))
@@ -22,10 +33,12 @@ export function formatRelativeDate(date) {
   const d    = parseDate(date)
   const now  = new Date()
   const diff = Math.floor((now - d) / (1000 * 60 * 60 * 24))
-  if (diff === 0) return 'Hoy'
-  if (diff === 1) return 'Ayer'
-  if (diff < 7)  return `Hace ${diff} días`
-  if (diff < 30) return `Hace ${Math.floor(diff / 7)} sem.`
+  if (diff === 0)  return 'Hoy'
+  if (diff === 1)  return 'Ayer'
+  if (diff > 1 && diff < 7)  return `Hace ${diff} días`
+  if (diff >= 7 && diff < 30) return `Hace ${Math.floor(diff / 7)} sem.`
+  if (diff === -1) return 'Mañana'
+  if (diff < -1)  return `En ${Math.abs(diff)} días`
   return formatDate(date)
 }
 

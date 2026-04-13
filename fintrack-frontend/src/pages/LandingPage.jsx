@@ -226,26 +226,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Stats strip ─────────────────────────────────────────────────── */}
-      <Section className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 py-12">
-        <div className="max-w-6xl mx-auto px-5 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-          {[
-            { label: 'Balance este mes', value: '$660.00', sub: '+$3,200 ingresos', Icon: TrendingUp },
-            { label: 'Transacciones',    value: '34',      sub: 'registradas en abril',   Icon: ArrowLeftRight },
-            { label: 'Presupuestos',     value: '4',       sub: 'activos este mes',        Icon: Wallet },
-          ].map(({ label, value, sub, Icon }) => (
-            <motion.div key={label} variants={fadeUp} className="text-white">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Icon size={15} className="text-white/60" />
-                <span className="text-xs font-medium text-white/60 uppercase tracking-wide">{label}</span>
-              </div>
-              <p className="text-4xl font-extrabold text-white mb-1">{value}</p>
-              <p className="text-sm text-white/60">{sub}</p>
-            </motion.div>
-          ))}
-        </div>
-      </Section>
-
       {/* ── Transactions preview ─────────────────────────────────────────── */}
       <Section className="py-20 bg-white dark:bg-slate-950">
         <div className="max-w-6xl mx-auto px-5 grid lg:grid-cols-2 gap-12 items-center">

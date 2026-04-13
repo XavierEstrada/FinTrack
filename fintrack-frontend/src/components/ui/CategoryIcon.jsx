@@ -13,7 +13,7 @@ import {
   ShoppingBasket, Globe, MapPin, Camera, Headphones, Watch, Gem,
   Hammer, Lightbulb, Wifi, Phone, Mail, Send, Truck, Anchor, Flame,
   Snowflake, Umbrella, Cloud, Wind, Trees, Flower2, Dog, Cat,
-  Salad, IceCream, Beer, Wine, Sandwich, Soup,
+  Salad, IceCream, Beer, Wine, Sandwich, Soup, Bookmark,
 } from 'lucide-react'
 
 const iconMap = {
@@ -101,6 +101,7 @@ const iconMap = {
   'wine':             Wine,
   'sandwich':         Sandwich,
   'soup':             Soup,
+  'bookmark':         Bookmark,
 }
 
 export default function CategoryIcon({ name, size = 15, className = '' }) {

@@ -1,11 +1,13 @@
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import Modal from '../ui/Modal'
+import CategorySelect from '../ui/CategorySelect'
 import { useCategories } from '../../hooks/useCategories'
 import { useCreateTransaction, useUpdateTransaction } from '../../hooks/useTransactions'
+import { useCurrencySymbol } from '../../hooks/useCurrency'
 
 const schema = z.object({
   description: z.string().min(1, 'La descripción es requerida'),
@@ -20,14 +22,15 @@ const label  = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-
 const errCls = 'text-red-500 text-xs mt-1'
 
 export default function TransactionModal({ isOpen, onClose, transaction = null }) {
-  const isEditing = !!transaction
-  const today     = new Date().toISOString().split('T')[0]
+  const isEditing      = !!transaction
+  const today          = new Date().toISOString().split('T')[0]
+  const currencySymbol = useCurrencySymbol()
 
   const { data: categories = [], isLoading: loadingCategories } = useCategories()
   const createMutation = useCreateTransaction()
   const updateMutation = useUpdateTransaction()
 
-  const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, watch, reset, control, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { type: 'expense', date: today },
   })
@@ -106,15 +109,15 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={label}>Monto</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+            <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
+              <span className="pl-3 pr-1.5 text-slate-400 dark:text-slate-500 text-sm shrink-0">{currencySymbol}</span>
               <input
                 {...register('amount')}
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0.00"
-                className={`${field} pl-7`}
+                className="flex-1 py-2 pr-3 text-sm text-slate-800 dark:text-slate-100 bg-transparent focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
             {errors.amount && <p className={errCls}>{errors.amount.message}</p>}
@@ -130,14 +133,18 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
         {/* Categoría */}
         <div>
           <label className={label}>Categoría</label>
-          <select {...register('categoryId')} className={field} disabled={loadingCategories}>
-            <option value="">
-              {loadingCategories ? 'Cargando categorías…' : 'Seleccionar categoría…'}
-            </option>
-            {filteredCategories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <Controller
+            name="categoryId"
+            control={control}
+            render={({ field }) => (
+              <CategorySelect
+                categories={filteredCategories}
+                value={field.value}
+                onChange={field.onChange}
+                loading={loadingCategories}
+              />
+            )}
+          />
           {errors.categoryId && <p className={errCls}>{errors.categoryId.message}</p>}
         </div>
 

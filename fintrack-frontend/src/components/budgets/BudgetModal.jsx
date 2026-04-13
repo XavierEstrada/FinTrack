@@ -1,12 +1,14 @@
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { CalendarRange } from 'lucide-react'
 import Modal from '../ui/Modal'
+import CategorySelect from '../ui/CategorySelect'
 import { useCategories } from '../../hooks/useCategories'
-import { useUpsertBudget } from '../../hooks/useBudgets'
+import { useBudgets, useUpsertBudget } from '../../hooks/useBudgets'
+import { useCurrencySymbol } from '../../hooks/useCurrency'
 
 const schema = z.object({
   categoryId: z.string().min(1, 'Selecciona una categoría'),
@@ -22,18 +24,29 @@ const errCls = 'text-red-500 text-xs mt-1'
 const currentMonth = new Date().toISOString().slice(0, 7)
 
 export default function BudgetModal({ isOpen, onClose, budget = null }) {
-  const isEditing = !!budget
+  const isEditing      = !!budget
+  const currencySymbol = useCurrencySymbol()
   const { data: categories = [], isLoading: loadingCategories } = useCategories()
   const upsertMutation = useUpsertBudget()
 
   const expenseCategories = categories.filter(c => c.type === 'expense')
 
-  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, watch, control, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { month: currentMonth, isAnnual: false },
   })
 
-  const isAnnual = watch('isAnnual')
+  const isAnnual      = watch('isAnnual')
+  const selectedMonth = watch('month')
+
+  // Categorías ya presupuestadas para el mes seleccionado
+  const { data: existingBudgets = [] } = useBudgets(selectedMonth)
+  const takenIds = isEditing
+    ? new Set()
+    : new Set(existingBudgets.map(b => b.categoryId))
+
+  const availableCategories = expenseCategories.filter(c => !takenIds.has(c.id))
+  const allTaken = !isEditing && !loadingCategories && expenseCategories.length > 0 && availableCategories.length === 0
 
   useEffect(() => {
     if (budget) {
@@ -75,23 +88,36 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
 
         <div>
           <label className={label}>Categoría</label>
-          <select {...register('categoryId')} className={field} disabled={isEditing || loadingCategories}>
-            <option value="">{loadingCategories ? 'Cargando…' : 'Seleccionar categoría…'}</option>
-            {expenseCategories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          {allTaken ? (
+            <p className="text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50">
+              Ha registrado todas las categorías disponibles para este mes.
+            </p>
+          ) : (
+            <Controller
+              name="categoryId"
+              control={control}
+              render={({ field }) => (
+                <CategorySelect
+                  categories={isEditing ? expenseCategories : availableCategories}
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={isEditing}
+                  loading={loadingCategories}
+                />
+              )}
+            />
+          )}
           {errors.categoryId && <p className={errCls}>{errors.categoryId.message}</p>}
         </div>
 
         <div>
           <label className={label}>Monto límite {isAnnual ? 'mensual' : 'mensual'}</label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+          <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
+            <span className="pl-3 pr-1.5 text-slate-400 dark:text-slate-500 text-sm shrink-0">{currencySymbol}</span>
             <input
               {...register('amount')}
               type="number" step="0.01" min="0" placeholder="0.00"
-              className={`${field} pl-7`}
+              className="flex-1 py-2 pr-3 text-sm text-slate-800 dark:text-slate-100 bg-transparent focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
           {errors.amount && <p className={errCls}>{errors.amount.message}</p>}
@@ -141,7 +167,7 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
             Cancelar
           </button>
-          <button type="submit" disabled={isSubmitting}
+          <button type="submit" disabled={isSubmitting || allTaken}
             className="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
             {isSubmitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear presupuesto'}
           </button>
