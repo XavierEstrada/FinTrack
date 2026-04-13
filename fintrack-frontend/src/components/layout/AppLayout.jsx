@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Outlet, useLocation, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { LayoutDashboard, ArrowLeftRight, Wallet, BarChart3, User } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, Wallet, BarChart3, User, ShieldCheck } from 'lucide-react'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import { useAuthStore } from '../../store/authStore'
 
 const titles = {
-  '/':             'Dashboard',
+  '/dashboard':    'Dashboard',
   '/transactions': 'Transacciones',
   '/budgets':      'Presupuestos',
   '/reports':      'Reportes',
@@ -14,13 +15,15 @@ const titles = {
   '/admin':        'Administración',
 }
 
-const bottomLinks = [
-  { to: '/',             label: 'Inicio',         icon: LayoutDashboard },
-  { to: '/transactions', label: 'Transacciones',  icon: ArrowLeftRight  },
-  { to: '/budgets',      label: 'Presupuestos',   icon: Wallet          },
-  { to: '/reports',      label: 'Reportes',       icon: BarChart3       },
-  { to: '/profile',      label: 'Perfil',         icon: User            },
+const baseLinks = [
+  { to: '/dashboard',    label: 'Inicio',        icon: LayoutDashboard },
+  { to: '/transactions', label: 'Transacciones', icon: ArrowLeftRight  },
+  { to: '/budgets',      label: 'Presupuestos',  icon: Wallet          },
+  { to: '/reports',      label: 'Reportes',      icon: BarChart3       },
+  { to: '/profile',      label: 'Perfil',        icon: User            },
 ]
+
+const adminLink = { to: '/admin', label: 'Admin', icon: ShieldCheck }
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
@@ -29,9 +32,12 @@ const pageVariants = {
 }
 
 export default function AppLayout() {
-  const location = useLocation()
-  const title = titles[location.pathname] ?? 'FinTrack'
+  const location    = useLocation()
+  const title       = titles[location.pathname] ?? 'FinTrack'
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const profile     = useAuthStore(s => s.profile)
+  const isAdmin     = profile?.role === 'admin'
+  const bottomLinks = isAdmin ? [...baseLinks, adminLink] : baseLinks
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
@@ -69,7 +75,7 @@ export default function AppLayout() {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/dashboard'}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition-colors ${
                 isActive

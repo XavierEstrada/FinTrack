@@ -65,6 +65,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(b => b.CategoryId).HasColumnName("category_id");
             e.Property(b => b.Amount).HasColumnName("amount");
             e.Property(b => b.Month).HasColumnName("month");
+            e.Property(b => b.IsAnnual).HasColumnName("is_annual");
             e.Property(b => b.CreatedAt).HasColumnName("created_at");
             e.HasOne(b => b.Category).WithMany().HasForeignKey(b => b.CategoryId);
         });

@@ -1,11 +1,12 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import LandingPage from '../pages/LandingPage'
 
-export default function GuestRoute() {
+export default function LandingRoute() {
   const { session, loading } = useAuthStore()
 
   if (loading) return null
   if (session) return <Navigate to="/dashboard" replace />
 
-  return <Outlet />
+  return <LandingPage />
 }

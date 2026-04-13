@@ -1,7 +1,8 @@
 import { TrendingUp, TrendingDown, DollarSign, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { formatCurrency, formatRelativeDate, monthLabel } from '../lib/utils'
+import { formatRelativeDate, monthLabel } from '../lib/utils'
+import { useFormatCurrency } from '../hooks/useCurrency'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
 import { useSummary, useByCategory, useMonthlyTrend } from '../hooks/useReports'
 import { useTransactions } from '../hooks/useTransactions'
@@ -63,6 +64,7 @@ function BarChart({ data = [] }) {
 }
 
 function PieChart({ data = [] }) {
+  const fmt = useFormatCurrency()
   if (!data.length) return (
     <div className="flex items-center justify-center h-28 text-xs text-slate-400 dark:text-slate-500">
       Sin gastos en este período
@@ -95,7 +97,7 @@ function PieChart({ data = [] }) {
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.categoryColor ?? '#94a3b8' }} />
               <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">{c.categoryName}</span>
             </div>
-            <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 shrink-0">{formatCurrency(c.total)}</span>
+            <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 shrink-0">{fmt(c.total)}</span>
           </motion.li>
         ))}
       </motion.ul>
@@ -104,6 +106,7 @@ function PieChart({ data = [] }) {
 }
 
 export default function DashboardPage() {
+  const fmt = useFormatCurrency()
   const { data: summary,  isLoading: loadingSummary }  = useSummary(from, to)
   const { data: byCategory = [] }                       = useByCategory(from, to)
   const { data: trend = [] }                            = useMonthlyTrend(6)
@@ -159,7 +162,7 @@ export default function DashboardPage() {
               <div className="h-8 w-28 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
             ) : (
               <p className={`text-xl md:text-2xl font-bold tracking-tight ${color}`}>
-                <AnimatedNumber value={value} formatter={formatCurrency} duration={1} />
+                <AnimatedNumber value={value} formatter={fmt} duration={1} />
               </p>
             )}
           </motion.div>
@@ -235,7 +238,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <span className={`text-sm font-semibold shrink-0 ml-3 ${tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                  {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
                 </span>
               </motion.li>
             ))}

@@ -1,16 +1,8 @@
-import { useEffect } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 
 export default function ProtectedRoute() {
   const { session, loading } = useAuthStore()
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    if (!loading && !session) {
-      navigate('/login', { replace: true })
-    }
-  }, [session, loading, navigate])
 
   if (loading) {
     return (
@@ -23,7 +15,7 @@ export default function ProtectedRoute() {
     )
   }
 
-  if (!session) return null
+  if (!session) return <Navigate to="/login" replace />
 
   return <Outlet />
 }

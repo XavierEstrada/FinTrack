@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import { CalendarRange } from 'lucide-react'
 import Modal from '../ui/Modal'
 import { useCategories } from '../../hooks/useCategories'
 import { useUpsertBudget } from '../../hooks/useBudgets'
@@ -11,6 +12,7 @@ const schema = z.object({
   categoryId: z.string().min(1, 'Selecciona una categoría'),
   amount:     z.coerce.number().positive('El monto debe ser mayor a 0'),
   month:      z.string().min(1, 'Selecciona un mes'),
+  isAnnual:   z.boolean().optional(),
 })
 
 const field  = 'w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
@@ -26,28 +28,39 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
 
   const expenseCategories = categories.filter(c => c.type === 'expense')
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { month: currentMonth },
+    defaultValues: { month: currentMonth, isAnnual: false },
   })
+
+  const isAnnual = watch('isAnnual')
 
   useEffect(() => {
     if (budget) {
-      // budget.month viene como "2026-04-01", el input type="month" necesita "2026-04"
       const monthStr = budget.month ? String(budget.month).slice(0, 7) : currentMonth
-      reset({ categoryId: budget.categoryId, amount: budget.amount, month: monthStr })
+      reset({
+        categoryId: budget.categoryId,
+        amount:     budget.amount,
+        month:      monthStr,
+        isAnnual:   budget.isAnnual ?? false,
+      })
     } else {
-      reset({ month: currentMonth, categoryId: '', amount: '' })
+      reset({ month: currentMonth, categoryId: '', amount: '', isAnnual: false })
     }
   }, [budget, isOpen])
 
   const onSubmit = async (data) => {
     try {
-      // Convertir "2026-04" → "2026-04-01" (primer día del mes)
+      // Annual budgets are stored anchored to January of the selected year
+      const monthValue = data.isAnnual
+        ? `${data.month.slice(0, 4)}-01-01`
+        : `${data.month}-01`
+
       await upsertMutation.mutateAsync({
         categoryId: data.categoryId,
         amount:     data.amount,
-        month:      `${data.month}-01`,
+        month:      monthValue,
+        isAnnual:   data.isAnnual ?? false,
       })
       toast.success(isEditing ? 'Presupuesto actualizado' : 'Presupuesto creado')
       onClose()
@@ -72,7 +85,7 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
         </div>
 
         <div>
-          <label className={label}>Monto límite mensual</label>
+          <label className={label}>Monto límite {isAnnual ? 'mensual' : 'mensual'}</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
             <input
@@ -84,9 +97,42 @@ export default function BudgetModal({ isOpen, onClose, budget = null }) {
           {errors.amount && <p className={errCls}>{errors.amount.message}</p>}
         </div>
 
+        {/* Annual toggle */}
+        <label className="flex items-start gap-3 cursor-pointer select-none group">
+          <div className="relative mt-0.5">
+            <input
+              {...register('isAnnual')}
+              type="checkbox"
+              className="sr-only peer"
+              disabled={isEditing}
+            />
+            <div className={`w-9 h-5 rounded-full transition-colors peer-checked:bg-indigo-600 bg-slate-200 dark:bg-slate-700 ${isEditing ? 'opacity-50' : ''}`} />
+            <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+              <CalendarRange size={14} className="text-indigo-500" />
+              Presupuesto anual
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+              Se aplica automáticamente a todos los meses del año seleccionado
+            </p>
+          </div>
+        </label>
+
         <div>
-          <label className={label}>Mes</label>
-          <input {...register('month')} type="month" className={field} />
+          <label className={label}>{isAnnual ? 'Año' : 'Mes'}</label>
+          <input
+            {...register('month')}
+            type="month"
+            className={field}
+          />
+          {isAnnual && (
+            <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1 flex items-center gap-1">
+              <CalendarRange size={11} />
+              Solo se usa el año — aparecerá en todos los meses de {watch('month')?.slice(0, 4) ?? '…'}
+            </p>
+          )}
           {errors.month && <p className={errCls}>{errors.month.message}</p>}
         </div>
 

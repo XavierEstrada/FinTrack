@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { TrendingUp, CheckCircle } from 'lucide-react'
+import { TrendingUp, CheckCircle, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 
 const schema = z.object({
@@ -23,6 +23,8 @@ export default function RegisterPage() {
   const navigate = useNavigate()
   const [serverError, setServerError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema),
@@ -87,7 +89,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <p className="text-indigo-300 text-xs relative">© 2026 FinTrack · Proyecto de portafolio</p>
+        <p className="text-indigo-300 text-xs relative">© 2026 FinTrack · Tu gestor de finanzas personales</p>
       </div>
 
       {/* Panel derecho */}
@@ -99,6 +101,14 @@ export default function RegisterPage() {
             </div>
             <span className="text-lg font-bold text-slate-900 dark:text-slate-50">FinTrack</span>
           </div>
+
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mb-6"
+          >
+            <ArrowLeft size={13} />
+            Volver al inicio
+          </Link>
 
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-1">Crear cuenta</h2>
           <p className="text-slate-500 dark:text-slate-400 text-sm mb-8">Completa los datos para comenzar</p>
@@ -117,12 +127,32 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Contraseña</label>
-                <input {...register('password')} type="password" placeholder="••••••••" className={inputCls} />
+                <div className="relative">
+                  <input {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="••••••••" className={`${inputCls} pr-10`} />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Confirmar</label>
-                <input {...register('confirmPassword')} type="password" placeholder="••••••••" className={inputCls} />
+                <div className="relative">
+                  <input {...register('confirmPassword')} type={showConfirm ? 'text' : 'password'} placeholder="••••••••" className={`${inputCls} pr-10`} />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    tabIndex={-1}
+                  >
+                    {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
                 {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
               </div>
             </div>

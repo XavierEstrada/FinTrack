@@ -11,6 +11,7 @@ public class MappingProfile : AutoMapper.Profile
         // ── Transactions ─────────────────────────────────────────────────────
         CreateMap<Transaction, TransactionDto>()
             .ForMember(d => d.CategoryName,  o => o.MapFrom(s => s.Category != null ? s.Category.Name  : null))
+            .ForMember(d => d.CategoryIcon,  o => o.MapFrom(s => s.Category != null ? s.Category.Icon  : null))
             .ForMember(d => d.CategoryColor, o => o.MapFrom(s => s.Category != null ? s.Category.Color : null));
 
         CreateMap<CreateTransactionDto, Transaction>()

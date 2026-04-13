@@ -19,7 +19,9 @@ public class BudgetService(AppDbContext db, IMapper mapper)
 
         var budgets = await db.Budgets
             .Include(b => b.Category)
-            .Where(b => b.UserId == userId && b.Month == monthDate)
+            .Where(b => b.UserId == userId &&
+                        ((!b.IsAnnual && b.Month == monthDate) ||
+                         (b.IsAnnual  && b.Month.Year == monthDate.Year)))
             .ToListAsync();
 
         if (budgets.Count == 0) return [];
@@ -47,18 +49,34 @@ public class BudgetService(AppDbContext db, IMapper mapper)
 
     public async Task<BudgetDto> UpsertAsync(UpsertBudgetDto input, Guid userId)
     {
-        var existing = await db.Budgets
-            .Include(b => b.Category)
-            .FirstOrDefaultAsync(b => b.UserId == userId
-                                      && b.CategoryId == input.CategoryId
-                                      && b.Month == input.Month);
+        // Annual budgets are unique per user + category + year.
+        // Regular budgets are unique per user + category + month.
+        var existing = input.IsAnnual
+            ? await db.Budgets
+                .Include(b => b.Category)
+                .FirstOrDefaultAsync(b => b.UserId == userId
+                                          && b.CategoryId == input.CategoryId
+                                          && b.IsAnnual
+                                          && b.Month.Year == input.Month.Year)
+            : await db.Budgets
+                .Include(b => b.Category)
+                .FirstOrDefaultAsync(b => b.UserId == userId
+                                          && b.CategoryId == input.CategoryId
+                                          && !b.IsAnnual
+                                          && b.Month == input.Month);
 
         if (existing is not null)
         {
-            existing.Amount = input.Amount;
+            existing.Amount   = input.Amount;
+            existing.IsAnnual = input.IsAnnual;
             await db.SaveChangesAsync();
             return mapper.Map<BudgetDto>(existing);
         }
+
+        // Annual budgets are always stored anchored to January 1 of the given year.
+        var storedMonth = input.IsAnnual
+            ? new DateOnly(input.Month.Year, 1, 1)
+            : input.Month;
 
         var budget = new Budget
         {
@@ -66,7 +84,8 @@ public class BudgetService(AppDbContext db, IMapper mapper)
             UserId     = userId,
             CategoryId = input.CategoryId,
             Amount     = input.Amount,
-            Month      = input.Month,
+            Month      = storedMonth,
+            IsAnnual   = input.IsAnnual,
             CreatedAt  = DateTime.UtcNow,
         };
 

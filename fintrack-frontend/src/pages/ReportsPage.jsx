@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { formatCurrency, monthLabel } from '../lib/utils'
+import { monthLabel } from '../lib/utils'
+import { useFormatCurrency } from '../hooks/useCurrency'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
 import { useByCategory, useMonthlyTrend } from '../hooks/useReports'
 
@@ -97,6 +98,7 @@ function LineChart({ data = [] }) {
 }
 
 export default function ReportsPage() {
+  const fmt = useFormatCurrency()
   const [currentDate, setCurrentDate] = useState(new Date())
   const currentMonth = toYearMonth(currentDate)
   const { from, to } = monthBounds(currentMonth)
@@ -161,7 +163,7 @@ export default function ReportsPage() {
               <div className="h-8 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
             ) : (
               <p className="text-xl md:text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                <AnimatedNumber value={totalBalance} formatter={formatCurrency} duration={1.2} />
+                <AnimatedNumber value={totalBalance} formatter={fmt} duration={1.2} />
               </p>
             )}
           </div>
@@ -219,7 +221,7 @@ export default function ReportsPage() {
                         <span className="font-medium text-slate-800 dark:text-slate-100">{c.categoryName}</span>
                       </div>
                     </td>
-                    <td className="px-4 md:px-5 py-3.5 text-right font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(c.total)}</td>
+                    <td className="px-4 md:px-5 py-3.5 text-right font-semibold text-slate-800 dark:text-slate-100">{fmt(c.total)}</td>
                     <td className="px-4 md:px-5 py-3.5 text-right text-slate-500 dark:text-slate-400">{Math.round(c.percentage)}%</td>
                     <td className="px-4 md:px-5 py-3.5">
                       <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -238,7 +240,7 @@ export default function ReportsPage() {
               <tfoot>
                 <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                   <td className="px-4 md:px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300">Total</td>
-                  <td className="px-4 md:px-5 py-3 text-right text-sm font-bold text-slate-800 dark:text-slate-100">{formatCurrency(totalExpenses)}</td>
+                  <td className="px-4 md:px-5 py-3 text-right text-sm font-bold text-slate-800 dark:text-slate-100">{fmt(totalExpenses)}</td>
                   <td className="px-4 md:px-5 py-3 text-right text-sm text-slate-500 dark:text-slate-400">100%</td>
                   <td />
                 </tr>

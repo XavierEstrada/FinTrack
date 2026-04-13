@@ -19,9 +19,19 @@ export function useAuth() {
   }
 
   const logout = async () => {
-    await supabase.auth.signOut()
-    // Forzar limpieza del estado por si onAuthStateChange no dispara a tiempo
+    // 1. Marcar que estamos cerrando sesión ANTES de cualquier await.
+    //    Esto bloquea que onAuthStateChange re-autentique si llega un TOKEN_REFRESHED.
+    useAuthStore.getState().startSignOut()
+
+    // 2. Limpiar estado local inmediatamente → ProtectedRoute redirige sin esperar red.
     useAuthStore.getState().clearAuth()
+
+    // 3. Invalidar sesión en Supabase (en segundo plano, errores son no-críticos).
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // La sesión local ya fue limpiada; el usuario ya fue redirigido.
+    }
   }
 
   return { session, profile, loading, login, register, logout }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, CalendarRange } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { formatCurrency } from '../lib/utils'
+import { useFormatCurrency } from '../hooks/useCurrency'
 import { useBudgets, useDeleteBudget } from '../hooks/useBudgets'
 import BudgetModal from '../components/budgets/BudgetModal'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
@@ -28,6 +28,7 @@ function monthDisplay(ym) {
 }
 
 function BudgetCard({ budget, onEdit, onDelete, index }) {
+  const fmt       = useFormatCurrency()
   const pct       = budget.amount > 0 ? Math.min((budget.spent / budget.amount) * 100, 100) : 0
   const remaining = budget.amount - budget.spent
   const over      = budget.spent > budget.amount
@@ -43,7 +44,10 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{budget.categoryName}</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Presupuesto mensual</p>
+            {budget.isAnnual
+              ? <p className="text-xs text-indigo-500 dark:text-indigo-400 flex items-center gap-1"><CalendarRange size={10} />Presupuesto anual</p>
+              : <p className="text-xs text-slate-400 dark:text-slate-500">Presupuesto mensual</p>
+            }
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -75,13 +79,13 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
       <div className="flex items-center justify-between text-xs">
         <div>
           <span className="text-slate-400 dark:text-slate-500">Gastado </span>
-          <span className="font-semibold text-slate-700 dark:text-slate-300">{formatCurrency(budget.spent)}</span>
+          <span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(budget.spent)}</span>
         </div>
         <div className="text-right">
           <p className={`font-semibold ${over ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-            {over ? `+${formatCurrency(Math.abs(remaining))} excedido` : `${formatCurrency(remaining)} disponible`}
+            {over ? `+${fmt(Math.abs(remaining))} excedido` : `${fmt(remaining)} disponible`}
           </p>
-          <p className="text-slate-400 dark:text-slate-500">de {formatCurrency(budget.amount)}</p>
+          <p className="text-slate-400 dark:text-slate-500">de {fmt(budget.amount)}</p>
         </div>
       </div>
     </motion.div>
@@ -89,6 +93,7 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
 }
 
 export default function BudgetsPage() {
+  const fmt = useFormatCurrency()
   const now = new Date()
   const [currentDate, setCurrentDate] = useState(now)
   const [modalOpen, setModalOpen]     = useState(false)
@@ -140,7 +145,7 @@ export default function BudgetsPage() {
           <motion.div key={item.label} variants={cardItem} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{item.label}</p>
             <p className={`text-xl font-bold ${item.color}`}>
-              <AnimatedNumber value={item.value} formatter={formatCurrency} />
+              <AnimatedNumber value={item.value} formatter={fmt} />
             </p>
           </motion.div>
         ))}

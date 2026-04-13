@@ -7,6 +7,7 @@ public class Budget
     public Guid CategoryId { get; set; }
     public decimal Amount { get; set; }
     public DateOnly Month { get; set; }
+    public bool IsAnnual { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public Category? Category { get; set; }

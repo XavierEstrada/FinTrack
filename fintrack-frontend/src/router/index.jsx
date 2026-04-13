@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import GuestRoute from './GuestRoute'
+import LandingRoute from './LandingRoute'
 import AppLayout from '../components/layout/AppLayout'
 import LoginPage from '../pages/auth/LoginPage'
 import RegisterPage from '../pages/auth/RegisterPage'
@@ -12,6 +13,10 @@ import ProfilePage from '../pages/ProfilePage'
 import AdminPage from '../pages/admin/AdminPage'
 
 export const router = createBrowserRouter([
+  // Landing — shows page for guests, redirects authenticated users to /dashboard
+  { path: '/', element: <LandingRoute /> },
+
+  // Guest-only (redirect to /dashboard if already logged in)
   {
     element: <GuestRoute />,
     children: [
@@ -19,13 +24,15 @@ export const router = createBrowserRouter([
       { path: '/register', element: <RegisterPage /> },
     ],
   },
+
+  // Protected app
   {
     element: <ProtectedRoute />,
     children: [
       {
         element: <AppLayout />,
         children: [
-          { path: '/',             element: <DashboardPage /> },
+          { path: '/dashboard',    element: <DashboardPage /> },
           { path: '/transactions', element: <TransactionsPage /> },
           { path: '/budgets',      element: <BudgetsPage /> },
           { path: '/reports',      element: <ReportsPage /> },

@@ -10,6 +10,7 @@ public class BudgetDto
     public string CategoryType { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public DateOnly Month { get; set; }
+    public bool IsAnnual { get; set; }
     public decimal Spent { get; set; }
 }
 
@@ -18,4 +19,5 @@ public class UpsertBudgetDto
     public Guid CategoryId { get; set; }
     public decimal Amount { get; set; }
     public DateOnly Month { get; set; }
+    public bool IsAnnual { get; set; }
 }

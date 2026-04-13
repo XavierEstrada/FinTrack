@@ -5,6 +5,7 @@ public class TransactionDto
     public Guid Id { get; set; }
     public Guid? CategoryId { get; set; }
     public string? CategoryName { get; set; }
+    public string? CategoryIcon { get; set; }
     public string? CategoryColor { get; set; }
     public decimal Amount { get; set; }
     public string Type { get; set; } = string.Empty;

@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { getAvatarGradient } from '../../lib/utils'
 
 const navLinks = [
-  { to: '/',             label: 'Dashboard',     icon: LayoutDashboard },
+  { to: '/dashboard',    label: 'Dashboard',     icon: LayoutDashboard },
   { to: '/transactions', label: 'Transacciones', icon: ArrowLeftRight  },
   { to: '/budgets',      label: 'Presupuestos',  icon: Wallet          },
   { to: '/reports',      label: 'Reportes',      icon: BarChart3       },
@@ -52,7 +52,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/dashboard'}
             onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${

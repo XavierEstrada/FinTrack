@@ -1,6 +1,7 @@
 import { Users, ArrowLeftRight, TrendingUp, TrendingDown } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { formatCurrency, formatDate, getAvatarGradient } from '../../lib/utils'
+import { formatDate, getAvatarGradient } from '../../lib/utils'
+import { useFormatCurrency } from '../../hooks/useCurrency'
 import AnimatedNumber from '../../components/ui/AnimatedNumber'
 import { useAdminStats, useAdminUsers } from '../../hooks/useAdmin'
 
@@ -18,6 +19,7 @@ const rowItem = {
 }
 
 export default function AdminPage() {
+  const fmt = useFormatCurrency()
   const { data: stats, isLoading: loadingStats } = useAdminStats()
   const { data: users = [], isLoading: loadingUsers } = useAdminUsers()
 
@@ -53,7 +55,7 @@ export default function AdminPage() {
             ) : (
               <p className={`text-lg md:text-2xl font-bold tracking-tight ${color}`}>
                 {currency
-                  ? <AnimatedNumber value={value} formatter={formatCurrency} duration={1} />
+                  ? <AnimatedNumber value={value} formatter={fmt} duration={1} />
                   : <AnimatedNumber value={value} formatter={v => Math.round(v).toLocaleString()} duration={1} />
                 }
               </p>

@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatCurrency, formatDate } from '../lib/utils'
+import { formatDate } from '../lib/utils'
+import { useFormatCurrency } from '../hooks/useCurrency'
 import { useTransactions, useDeleteTransaction } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import TransactionModal from '../components/transactions/TransactionModal'
+import CategoryIcon from '../components/ui/CategoryIcon'
 
 const LIMIT = 10
 
 const inputCls = 'text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600'
 
 export default function TransactionsPage() {
+  const fmt = useFormatCurrency()
   const [search, setSearch]                 = useState('')
   const [typeFilter, setTypeFilter]         = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -133,7 +136,14 @@ export default function TransactionsPage() {
                   </td>
                   <td className="px-4 md:px-5 py-3.5">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: tx.categoryColor ?? '#94a3b8' }} />
+                      {tx.categoryName
+                        ? <CategoryIcon
+                            name={tx.categoryIcon}
+                            size={14}
+                            className="shrink-0 text-slate-400 dark:text-slate-500"
+                          />
+                        : <span className="w-2 h-2 rounded-full shrink-0 bg-slate-300 dark:bg-slate-600" />
+                      }
                       <span className="text-slate-600 dark:text-slate-400">{tx.categoryName ?? '—'}</span>
                     </span>
                   </td>
@@ -149,7 +159,7 @@ export default function TransactionsPage() {
                   <td className={`px-4 md:px-5 py-3.5 text-right font-semibold ${
                     tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'
                   }`}>
-                    {tx.type === 'income' ? '+' : '−'}{formatCurrency(tx.amount)}
+                    {tx.type === 'income' ? '+' : '−'}{fmt(tx.amount)}
                   </td>
                   <td className="px-4 md:px-5 py-3.5">
                     <div className="flex items-center justify-end gap-1.5">

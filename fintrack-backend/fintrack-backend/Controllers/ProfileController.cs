@@ -26,4 +26,13 @@ public class ProfileController(ProfileService service) : ControllerBase
         var updated = await service.UpdateAsync(userId, dto);
         return updated is null ? NotFound() : Ok(updated);
     }
+
+    /// <summary>DELETE /api/profile — elimina la cuenta y todos sus datos.</summary>
+    [HttpDelete]
+    public async Task<IActionResult> Delete()
+    {
+        var userId = User.GetUserId();
+        await service.DeleteAccountAsync(userId);
+        return NoContent();
+    }
 }
