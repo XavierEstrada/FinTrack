@@ -36,10 +36,17 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
 
   const expenseCategories = categories.filter(c => c.type === 'expense')
 
-  const { register, handleSubmit, reset, watch, control, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, reset, watch, control, formState: { errors, isSubmitting, isDirty } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { month: defaultMonth ?? currentMonth, isAnnual: false },
   })
+
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+
+  const handleClose = () => {
+    if (isDirty) setShowCloseConfirm(true)
+    else onClose()
+  }
 
   const isAnnual      = watch('isAnnual')
   const selectedMonth = watch('month')
@@ -115,7 +122,7 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar presupuesto' : 'Nuevo presupuesto'} size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} onRequestClose={handleClose} title={isEditing ? 'Editar presupuesto' : 'Nuevo presupuesto'} size="sm">
       <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
 
         <div>
@@ -209,7 +216,7 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <button type="button" onClick={onClose}
+          <button type="button" onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
             Cancelar
           </button>
@@ -219,6 +226,16 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
           </button>
         </div>
       </form>
+
+      <ConfirmDialog
+        isOpen={showCloseConfirm}
+        onClose={() => setShowCloseConfirm(false)}
+        onConfirm={() => { setShowCloseConfirm(false); onClose() }}
+        title="¿Descartar cambios?"
+        description="Tienes cambios sin guardar. Si cierras ahora, se perderán."
+        confirmLabel="Descartar"
+        variant="warning"
+      />
 
       <ConfirmDialog
         isOpen={showAnnualConfirm}

@@ -48,6 +48,17 @@ export function monthLabel(monthStr) {
     .format(new Date(Number(year), Number(month) - 1))
 }
 
+export function toYearMonth(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+export function monthDisplay(ym) {
+  const [year, month] = ym.split('-')
+  const label = new Intl.DateTimeFormat('es-ES', { month: 'long' })
+    .format(new Date(Number(year), Number(month) - 1))
+  return `${label.charAt(0).toUpperCase() + label.slice(1)} ${year}`
+}
+
 const GRADIENTS = [
   'linear-gradient(135deg,#6366f1,#8b5cf6)',
   'linear-gradient(135deg,#8b5cf6,#ec4899)',

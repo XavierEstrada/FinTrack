@@ -4,6 +4,7 @@ import { SkeletonCardGrid } from '../components/ui/Skeleton'
 import CategoryIcon from '../components/ui/CategoryIcon'
 import { motion } from 'framer-motion'
 import { useFormatCurrency } from '../hooks/useCurrency'
+import { toYearMonth, monthDisplay } from '../lib/utils'
 import { useBudgets, useDeleteBudget } from '../hooks/useBudgets'
 import { useCategories } from '../hooks/useCategories'
 import BudgetModal from '../components/budgets/BudgetModal'
@@ -28,17 +29,6 @@ function budgetZone(pct, over) {
   if (pct >= 100) return 'full'       // exactamente 100%
   if (pct >= 70)  return 'warning'    // 70–99%
   return 'ok'
-}
-
-function toYearMonth(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-}
-
-function monthDisplay(ym) {
-  const [year, month] = ym.split('-')
-  const label = new Intl.DateTimeFormat('es-ES', { month: 'long' })
-    .format(new Date(Number(year), Number(month) - 1))
-  return `${label.charAt(0).toUpperCase() + label.slice(1)} ${year}`
 }
 
 const badgeStyles = {

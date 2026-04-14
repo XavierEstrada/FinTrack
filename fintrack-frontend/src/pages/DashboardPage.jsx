@@ -1,12 +1,13 @@
-import { TrendingUp, TrendingDown, DollarSign, ArrowRight } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, PiggyBank, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { formatRelativeDate, monthLabel } from '../lib/utils'
+import { formatRelativeDate, monthLabel, toYearMonth, monthDisplay } from '../lib/utils'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
 import CategoryPieChart from '../components/ui/CategoryPieChart'
 import { useSummary, useByCategory, useMonthlyTrend } from '../hooks/useReports'
 import { useTransactions } from '../hooks/useTransactions'
+import { useSavingsGoals } from '../hooks/useSavingsGoals'
 
 // Rango del mes actual
 function currentMonthRange() {
@@ -18,6 +19,7 @@ function currentMonthRange() {
 }
 
 const { from, to } = currentMonthRange()
+const currentMonth = toYearMonth(new Date())
 
 const container = {
   hidden: {},
@@ -71,7 +73,11 @@ export default function DashboardPage() {
   const { data: byCategory = [] }                       = useByCategory(from, to)
   const { data: trend = [] }                            = useMonthlyTrend(6)
   const { data: txData }                                = useTransactions({ page: 1, limit: 5 })
+  const { data: savingsGoals = [] }                     = useSavingsGoals(currentMonth)
   const recent = txData?.data ?? []
+
+  const metGoals   = savingsGoals.filter(g => g.saved >= g.targetAmount).length
+  const totalGoals = savingsGoals.length
 
   const kpis = [
     {
@@ -128,6 +134,45 @@ export default function DashboardPage() {
           </motion.div>
         ))}
       </motion.div>
+
+      {/* Savings goals summary — only shown when goals exist */}
+      {totalGoals > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.15, ease: 'easeOut' }}
+        >
+          <Link
+            to="/savings"
+            className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl px-4 md:px-5 py-3.5 border border-slate-200 dark:border-slate-800 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center shrink-0">
+                <PiggyBank size={18} className="text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Metas de ahorro — {monthDisplay(currentMonth)}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                  {metGoals === totalGoals
+                    ? `¡Todas las metas cumplidas!`
+                    : `${metGoals} de ${totalGoals} ${totalGoals === 1 ? 'meta cumplida' : 'metas cumplidas'}`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1">
+                {savingsGoals.map((g, i) => (
+                  <span
+                    key={i}
+                    className={`w-2 h-2 rounded-full ${g.saved >= g.targetAmount ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'}`}
+                  />
+                ))}
+              </div>
+              <ArrowRight size={15} className="text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors" />
+            </div>
+          </Link>
+        </motion.div>
+      )}
 
       {/* Charts */}
       <motion.div

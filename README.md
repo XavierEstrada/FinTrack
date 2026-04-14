@@ -1,6 +1,6 @@
 # FinTrack
 
-Aplicación fullstack de gestión de finanzas personales. Permite registrar ingresos y gastos, organizar presupuestos mensuales o anuales por categoría, visualizar reportes y comparar la evolución del balance en el tiempo.
+Aplicación fullstack de gestión de finanzas personales. Permite registrar ingresos y gastos, organizar presupuestos mensuales o anuales por categoría, definir metas de ahorro, visualizar reportes y comparar la evolución del balance en el tiempo.
 
 > Proyecto de portafolio — en desarrollo activo.
 
@@ -8,13 +8,15 @@ Aplicación fullstack de gestión de finanzas personales. Permite registrar ingr
 
 ## Características
 
-- **Dashboard** — resumen del mes con balance, ingresos, gastos y gráfico de barras ingreso vs. gasto de los últimos 6 meses
-- **Transacciones** — CRUD completo con búsqueda, filtros por tipo y categoría, paginación y soporte de comprobantes
-- **Presupuestos** — límites mensuales o anuales por categoría; barra de progreso con alerta visual al acercarse al límite
-- **Reportes** — gráfico de pastel interactivo de gastos por categoría + gráfico de línea de balance neto; exportación CSV
+- **Dashboard** — resumen del mes con balance, ingresos y gastos; gráfico de barras de los últimos 6 meses; gráfico de dona de gastos por categoría; panel de metas de ahorro del mes actual
+- **Transacciones** — CRUD completo con búsqueda, filtros por tipo y categoría, paginación, soporte de comprobantes y barra de totales (ingresos / gastos / balance) para el conjunto filtrado
+- **Presupuestos** — límites mensuales o anuales por categoría; barra de progreso con alerta visual; navegador de mes; copia rápida de presupuestos entre meses
+- **Metas de ahorro** — objetivos de ahorro por mes con barra de progreso, estados visuales (cumplida / cerca / lejos) y resumen en el dashboard
+- **Reportes** — gráfico de dona interactivo de gastos por categoría + gráfico de línea de balance neto; exportación CSV
 - **Categorías personalizadas** — cada usuario puede crear hasta 3 categorías propias con icono y color personalizado
-- **Perfil** — nombre, moneda preferida (símbolo dinámico en todos los montos), gestión de categorías propias
-- **Panel de administración** — estadísticas globales, lista de usuarios, CRUD completo de categorías del sistema
+- **Perfil** — nombre, moneda preferida (símbolo dinámico en todos los montos), gestión de categorías propias, cambio de contraseña y eliminación de cuenta
+- **Panel de administración** — estadísticas globales, lista de usuarios, CRUD de categorías del sistema; ruta protegida por rol (`admin`), inaccesible desde la URL para usuarios normales
+- **UX** — confirmación al cerrar un formulario con cambios sin guardar; skeletons de carga; animaciones con Framer Motion; `document.title` dinámico por vista; página 404 propia; Error Boundary global
 - **Dark mode** — toggle persistido en `localStorage`
 - **Diseño responsive** — sidebar en desktop, barra de navegación inferior en móvil
 
@@ -123,17 +125,25 @@ budgets
   user_id      uuid  FK → profiles
   category_id  uuid  FK → categories
   amount       decimal
-  month        date   -- primer día del mes (ej. 2025-05-01)
+  month        date   -- primer día del mes (ej. 2025-05-01) o del año (ej. 2025-01-01) si is_annual
   is_annual    bool   default false
   created_at   timestamptz
   UNIQUE (user_id, category_id, month)
+
+savings_goals
+  id             uuid  PK
+  user_id        uuid  FK → profiles
+  name           text
+  target_amount  decimal
+  month          date   -- primer día del mes (ej. 2025-05-01)
+  created_at     timestamptz
 ```
 
 ### Políticas RLS
 
 - `profiles` — los usuarios leen y actualizan solo su propia fila
 - `categories` — los usuarios leen todas las categorías del sistema + las propias; escriben solo las propias
-- `transactions` / `budgets` — los usuarios acceden únicamente a sus propias filas
+- `transactions` / `budgets` / `savings_goals` — los usuarios acceden únicamente a sus propias filas
 - Los admins bypasean RLS vía el backend con verificación de rol en la tabla `profiles`
 
 ---
@@ -214,14 +224,16 @@ FinTrack/
 │       ├── components/
 │       │   ├── admin/        # SystemCategoryFormModal
 │       │   ├── auth/         # AuthProvider
-│       │   ├── budgets/      # BudgetModal
+│       │   ├── budgets/      # BudgetModal, QuickCopyModal
 │       │   ├── categories/   # CategoryFormModal
 │       │   ├── layout/       # AppLayout, Sidebar, Header
+│       │   ├── savings/      # SavingsGoalModal
 │       │   ├── transactions/ # TransactionModal
-│       │   └── ui/           # AnimatedNumber, CategoryIcon, CategorySelect,
-│       │                     # ConfirmDialog, Modal, ...
+│       │   └── ui/           # AnimatedNumber, CategoryIcon, CategoryPieChart,
+│       │                     # CategorySelect, ConfirmDialog, ErrorBoundary,
+│       │                     # Modal, Skeleton, ...
 │       ├── hooks/            # useTransactions, useBudgets, useCategories,
-│       │                     # useReports, useAdmin, useCurrency, ...
+│       │                     # useReports, useSavingsGoals, useAdmin, useCurrency, ...
 │       ├── lib/              # supabaseClient.js, utils.js
 │       ├── pages/
 │       │   ├── admin/        # AdminPage
@@ -230,18 +242,21 @@ FinTrack/
 │       │   ├── TransactionsPage
 │       │   ├── BudgetsPage
 │       │   ├── ReportsPage
-│       │   └── ProfilePage
-│       ├── router/           # index.jsx, ProtectedRoute, GuestRoute
+│       │   ├── SavingsPage
+│       │   ├── ProfilePage
+│       │   └── NotFoundPage
+│       ├── router/           # index.jsx, ProtectedRoute, AdminRoute, GuestRoute
 │       ├── services/         # api.js (Axios), *Service.js por recurso
 │       └── store/            # authStore.js (Zustand), themeStore.js
 │
 └── fintrack-backend/
     └── fintrack-backend/
         ├── Controllers/      # Transactions, Budgets, Categories,
-        │                     # Reports, Profile, Admin
+        │                     # Reports, SavingsGoals, Profile, Admin
         ├── DTOs/             # Request/Response DTOs
-        ├── Models/           # Profile, Category, Transaction, Budget
-        ├── Services/         # AdminService
+        ├── Models/           # Profile, Category, Transaction, Budget, SavingsGoal
+        ├── Services/         # TransactionService, BudgetService, ReportService,
+        │                     # SavingsGoalService, ProfileService, AdminService
         ├── Data/             # AppDbContext
         ├── Extensions/       # ClaimsPrincipal.GetUserId()
         └── Mappings/         # AutoMapper profiles
@@ -252,13 +267,13 @@ FinTrack/
 ## API endpoints
 
 Todos los endpoints requieren `Authorization: Bearer <supabase-jwt>`.  
-Los endpoints `/admin/*` requieren además `profiles.role = 'admin'`.
+Los endpoints `/api/admin/*` requieren además `profiles.role = 'admin'`.
 
 ### Transacciones — `/api/transactions`
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/api/transactions` | Lista paginada con filtros (`page`, `limit`, `type`, `categoryId`, `search`) |
+| GET | `/api/transactions` | Lista paginada con filtros (`page`, `limit`, `type`, `categoryId`, `search`). Respuesta incluye `totalIncome` y `totalExpense` del conjunto filtrado completo |
 | POST | `/api/transactions` | Crear transacción |
 | PUT | `/api/transactions/{id}` | Actualizar transacción propia |
 | DELETE | `/api/transactions/{id}` | Eliminar transacción propia |
@@ -267,10 +282,19 @@ Los endpoints `/admin/*` requieren además `profiles.role = 'admin'`.
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/api/budgets?month=YYYY-MM` | Lista de presupuestos del mes con gasto actual |
-| POST | `/api/budgets` | Crear presupuesto |
+| GET | `/api/budgets?month=YYYY-MM` | Lista de presupuestos del mes con gasto actual. Los presupuestos anuales (`isAnnual=true`) se incluyen en todos los meses del año |
+| POST | `/api/budgets` | Crear presupuesto (mensual o anual) |
 | PUT | `/api/budgets/{id}` | Actualizar presupuesto propio |
 | DELETE | `/api/budgets/{id}` | Eliminar presupuesto propio |
+
+### Metas de ahorro — `/api/savings-goals`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/savings-goals?month=YYYY-MM` | Metas del mes con monto ahorrado calculado desde transacciones |
+| POST | `/api/savings-goals` | Crear meta de ahorro |
+| PUT | `/api/savings-goals/{id}` | Actualizar nombre o monto objetivo |
+| DELETE | `/api/savings-goals/{id}` | Eliminar meta |
 
 ### Categorías — `/api/categories`
 
@@ -285,7 +309,8 @@ Los endpoints `/admin/*` requieren además `profiles.role = 'admin'`.
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/api/reports/by-category?from=&to=` | Gastos agrupados por categoría en el rango de fechas |
+| GET | `/api/reports/summary?from=&to=` | Total de ingresos, gastos y balance neto en el rango de fechas |
+| GET | `/api/reports/by-category?from=&to=` | Gastos agrupados por categoría con porcentaje |
 | GET | `/api/reports/monthly-trend?months=6` | Balance neto por mes (últimos N meses) |
 
 ### Perfil — `/api/profile`
@@ -320,7 +345,5 @@ Los endpoints `/admin/*` requieren además `profiles.role = 'admin'`.
 - Reportes exportables en PDF
 - Notificaciones cuando un presupuesto se acerca al límite
 - Múltiples cuentas (banco, tarjeta, efectivo)
-- Metas de ahorro con barra de progreso
 - Importación de transacciones desde CSV bancario
-- Gráficas de tendencia y proyecciones
 - PWA / instalable en móvil

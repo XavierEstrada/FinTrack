@@ -34,7 +34,9 @@ public class TransactionService(AppDbContext db, IMapper mapper)
             query = query.Where(t => t.Description != null &&
                                      t.Description.ToLower().Contains(search.ToLower()));
 
-        var total = await query.CountAsync();
+        var total        = await query.CountAsync();
+        var totalIncome  = await query.Where(t => t.Type == "income").SumAsync(t => (decimal?)t.Amount) ?? 0;
+        var totalExpense = await query.Where(t => t.Type == "expense").SumAsync(t => (decimal?)t.Amount) ?? 0;
 
         var data = await query
             .OrderByDescending(t => t.Date)
@@ -44,10 +46,12 @@ public class TransactionService(AppDbContext db, IMapper mapper)
 
         return new TransactionListDto
         {
-            Data  = mapper.Map<IEnumerable<TransactionDto>>(data),
-            Total = total,
-            Page  = page,
-            Limit = limit,
+            Data         = mapper.Map<IEnumerable<TransactionDto>>(data),
+            Total        = total,
+            Page         = page,
+            Limit        = limit,
+            TotalIncome  = totalIncome,
+            TotalExpense = totalExpense,
         };
     }
 

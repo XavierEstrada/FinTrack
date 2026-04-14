@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Download, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { monthLabel } from '../lib/utils'
+import { monthLabel, toYearMonth, monthDisplay } from '../lib/utils'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
 import CategoryPieChart from '../components/ui/CategoryPieChart'
@@ -22,17 +22,6 @@ function monthBounds(ym) {
   const [y, m] = ym.split('-').map(Number)
   const last   = new Date(y, m, 0).getDate()
   return { from: `${ym}-01`, to: `${ym}-${String(last).padStart(2, '0')}` }
-}
-
-function toYearMonth(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-}
-
-function monthDisplay(ym) {
-  const [year, month] = ym.split('-')
-  const label = new Intl.DateTimeFormat('es-ES', { month: 'long' })
-    .format(new Date(Number(year), Number(month) - 1))
-  return `${label.charAt(0).toUpperCase() + label.slice(1)} ${year}`
 }
 
 function LineChart({ data = [] }) {

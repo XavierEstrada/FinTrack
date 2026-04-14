@@ -2,13 +2,14 @@ import { useEffect } from 'react'
 import { X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
-export default function Modal({ isOpen, onClose, title, children, size = 'md' }) {
+export default function Modal({ isOpen, onClose, onRequestClose, title, children, size = 'md' }) {
+  const handleRequestClose = onRequestClose ?? onClose
   useEffect(() => {
     if (!isOpen) return
-    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    const handler = (e) => { if (e.key === 'Escape') handleRequestClose() }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [isOpen, onClose])
+  }, [isOpen, handleRequestClose])
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : ''
@@ -28,7 +29,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={onClose}
+            onClick={handleRequestClose}
           />
 
           {/* Panel */}
@@ -43,7 +44,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">{title}</h2>
               <button
-                onClick={onClose}
+                onClick={handleRequestClose}
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
               >
                 <X size={17} />

@@ -8,20 +8,10 @@ import ConfirmDialog from '../components/ui/ConfirmDialog'
 import SavingsGoalModal from '../components/savings/SavingsGoalModal'
 import { useSavingsGoals, useDeleteSavingsGoal } from '../hooks/useSavingsGoals'
 import { useFormatCurrency } from '../hooks/useCurrency'
+import { toYearMonth, monthDisplay } from '../lib/utils'
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } }
 const cardItem  = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } } }
-
-function toYearMonth(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-}
-
-function monthDisplay(ym) {
-  const [year, month] = ym.split('-')
-  const label = new Intl.DateTimeFormat('es-ES', { month: 'long' })
-    .format(new Date(Number(year), Number(month) - 1))
-  return `${label.charAt(0).toUpperCase() + label.slice(1)} ${year}`
-}
 
 function goalZone(pct) {
   if (pct >= 100) return 'met'

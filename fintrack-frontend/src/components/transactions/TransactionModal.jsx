@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import Modal from '../ui/Modal'
+import ConfirmDialog from '../ui/ConfirmDialog'
 import CategorySelect from '../ui/CategorySelect'
 import { useCategories } from '../../hooks/useCategories'
 import { useCreateTransaction, useUpdateTransaction } from '../../hooks/useTransactions'
@@ -25,12 +26,13 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
   const isEditing      = !!transaction
   const today          = new Date().toISOString().split('T')[0]
   const currencySymbol = useCurrencySymbol()
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
 
   const { data: categories = [], isLoading: loadingCategories } = useCategories()
   const createMutation = useCreateTransaction()
   const updateMutation = useUpdateTransaction()
 
-  const { register, handleSubmit, watch, reset, control, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, watch, reset, control, formState: { errors, isSubmitting, isDirty } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { type: 'expense', date: today },
   })
@@ -48,6 +50,11 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
       reset({ type: 'expense', date: today, categoryId: '', description: '', amount: '' })
     }
   }, [transaction, isOpen])
+
+  const handleClose = () => {
+    if (isDirty) setShowCloseConfirm(true)
+    else onClose()
+  }
 
   const selectedType        = watch('type')
   const filteredCategories  = categories.filter(c => c.type === selectedType)
@@ -68,7 +75,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? 'Editar transacción' : 'Nueva transacción'}>
+    <Modal isOpen={isOpen} onClose={onClose} onRequestClose={handleClose} title={isEditing ? 'Editar transacción' : 'Nueva transacción'}>
       <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
 
         {/* Tipo */}
@@ -152,7 +159,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             Cancelar
@@ -168,6 +175,16 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
           </button>
         </div>
       </form>
+
+      <ConfirmDialog
+        isOpen={showCloseConfirm}
+        onClose={() => setShowCloseConfirm(false)}
+        onConfirm={() => { setShowCloseConfirm(false); onClose() }}
+        title="¿Descartar cambios?"
+        description="Tienes cambios sin guardar. Si cierras ahora, se perderán."
+        confirmLabel="Descartar"
+        variant="warning"
+      />
     </Modal>
   )
 }

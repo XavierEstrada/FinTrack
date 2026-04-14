@@ -39,9 +39,13 @@ export default function TransactionsPage() {
   const deleteMutation               = useDeleteTransaction()
   const userCategories               = categories.filter(c => c.isSystem === false)
 
-  const transactions = data?.data  ?? []
-  const total        = data?.total ?? 0
+  const transactions = data?.data         ?? []
+  const total        = data?.total        ?? 0
+  const totalIncome  = data?.totalIncome  ?? 0
+  const totalExpense = data?.totalExpense ?? 0
   const totalPages   = Math.max(1, Math.ceil(total / LIMIT))
+
+  const hasFilters = !!(typeFilter || categoryFilter || search)
 
   const openNew  = ()   => { setEditing(null); setModalOpen(true) }
   const openEdit = (tx) => { setEditing(tx);   setModalOpen(true) }
@@ -109,6 +113,33 @@ export default function TransactionsPage() {
           Nueva transacción
         </button>
       </div>
+
+      {/* Totals bar — shown when filters are active */}
+      {hasFilters && !isLoading && (
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-sm">
+          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide shrink-0">
+            {total} resultado{total !== 1 ? 's' : ''}
+          </span>
+          <span className="w-px h-4 bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+            <span className="text-slate-500 dark:text-slate-400 text-xs">Ingresos:</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs">+{fmt(totalIncome)}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-rose-400 shrink-0" />
+            <span className="text-slate-500 dark:text-slate-400 text-xs">Gastos:</span>
+            <span className="font-semibold text-rose-500 dark:text-rose-400 text-xs">−{fmt(totalExpense)}</span>
+          </span>
+          <span className="w-px h-4 bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+          <span className="flex items-center gap-1.5">
+            <span className="text-slate-500 dark:text-slate-400 text-xs">Balance:</span>
+            <span className={`font-semibold text-xs ${totalIncome - totalExpense >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-500 dark:text-rose-400'}`}>
+              {totalIncome - totalExpense >= 0 ? '+' : '−'}{fmt(Math.abs(totalIncome - totalExpense))}
+            </span>
+          </span>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">

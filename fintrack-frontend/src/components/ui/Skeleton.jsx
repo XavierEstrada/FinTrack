@@ -4,19 +4,6 @@ export default function Skeleton({ className = '' }) {
   )
 }
 
-export function SkeletonCard() {
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-      <div className="flex justify-between mb-4">
-        <Skeleton className="h-4 w-28" />
-        <Skeleton className="h-9 w-9 rounded-lg" />
-      </div>
-      <Skeleton className="h-8 w-36 mb-2" />
-      <Skeleton className="h-3 w-24" />
-    </div>
-  )
-}
-
 export function SkeletonRow() {
   return (
     <tr>
