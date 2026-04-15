@@ -4,7 +4,7 @@ import {
   BarChart3, User, ShieldCheck, TrendingUp, X, PiggyBank,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
-import { getAvatarGradient } from '../../lib/utils'
+import UserAvatar from '../ui/UserAvatar'
 
 const navLinks = [
   { to: '/dashboard',    label: 'Dashboard',     icon: LayoutDashboard },
@@ -20,8 +20,6 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const displayName = profile?.full_name ?? session?.user?.user_metadata?.full_name ?? '…'
   const email       = session?.user?.email ?? ''
-  const initials    = displayName.split(' ').map(n => n[0]).join('').toUpperCase()
-  const gradient    = getAvatarGradient(displayName)
 
   return (
     <aside className={`
@@ -97,12 +95,7 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* User footer */}
       <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-800 shrink-0">
         <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: gradient }}
-          >
-            <span className="text-white text-xs font-bold">{initials}</span>
-          </div>
+          <UserAvatar profile={profile} session={session} className="w-8 h-8" />
           <div className="min-w-0">
             <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{displayName}</p>
             {email && <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{email}</p>}

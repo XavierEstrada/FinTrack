@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Save, AlertTriangle, Loader2, KeyRound, Eye, EyeOff, Plus, Pencil, Trash2, Bookmark } from 'lucide-react'
+import { Save, AlertTriangle, Loader2, KeyRound, Eye, EyeOff, Plus, Pencil, Trash2, Bookmark, Camera } from 'lucide-react'
+import { avatarService } from '../services/avatarService'
 
 import { toast } from 'sonner'
 import { useAuthStore } from '../store/authStore'
@@ -28,9 +29,13 @@ const inputCls = 'w-full border border-slate-200 dark:border-slate-700 rounded-l
 
 // ── Modal cambio de contraseña ────────────────────────────────────────────────
 const pwSchema = z.object({
-  current:  z.string().min(1, 'Ingresa tu contraseña actual'),
-  next:     z.string().min(8, 'Mínimo 8 caracteres'),
-  confirm:  z.string(),
+  current: z.string().min(1, 'Ingresa tu contraseña actual'),
+  next: z.string()
+    .min(8,  'Mínimo 8 caracteres')
+    .max(16, 'Máximo 16 caracteres')
+    .regex(/[A-Z]/, 'Debe incluir al menos una letra mayúscula')
+    .regex(/[0-9]/, 'Debe incluir al menos un número'),
+  confirm: z.string(),
 }).refine(d => d.next === d.confirm, {
   message: 'Las contraseñas no coinciden',
   path: ['confirm'],
@@ -111,6 +116,7 @@ function ChangePasswordModal({ email, onClose, onSuccess }) {
                 {showNext ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">8-16 caracteres · al menos 1 mayúscula · al menos 1 número</p>
             {errors.next && <p className="text-red-500 text-xs mt-1">{errors.next.message}</p>}
           </div>
 
@@ -263,8 +269,11 @@ export default function ProfilePage() {
 
   const [fullName, setFullName]                   = useState(profile?.full_name ?? '')
   const [currency, setCurrency]                   = useState(profile?.currency  ?? 'USD')
+  const [avatarUrl, setAvatarUrl]                 = useState(profile?.avatar_url ?? null)
+  const [avatarUploading, setAvatarUploading]     = useState(false)
   const [showDeleteModal, setShowDeleteModal]     = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const fileInputRef = useRef(null)
   const [catModalOpen, setCatModalOpen]           = useState(false)
   const [editingCat, setEditingCat]               = useState(null)
   const [confirmCat, setConfirmCat]               = useState(null)
@@ -292,15 +301,21 @@ export default function ProfilePage() {
   const initials = (fullName || email || '?')
     .split(/[\s@]/).filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
+  // Sincronizar avatarUrl cuando el profile del store carga (puede llegar después del mount)
+  useEffect(() => {
+    setAvatarUrl(profile?.avatar_url ?? null)
+  }, [profile?.avatar_url])
+
   // Cargar perfil fresco del API al montar para asegurar que los campos estén actualizados
   useEffect(() => {
     profileService.get().then(r => {
-      const { fullName: name, currency: cur } = r.data
+      const { fullName: name, currency: cur, avatarUrl: url } = r.data
       if (name) setFullName(name)
       if (cur)  setCurrency(cur)
+      if (url !== undefined) setAvatarUrl(url ?? null)
       // Actualizar store con datos frescos del API
       useAuthStore.getState().setProfile(
-        { ...useAuthStore.getState().profile, full_name: name, currency: cur }
+        { ...useAuthStore.getState().profile, full_name: name, currency: cur, avatar_url: url }
       )
     }).catch(() => {})
   }, []) // solo al montar
@@ -331,162 +346,225 @@ export default function ProfilePage() {
     await supabase.auth.signOut()
   }
 
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = '' // permite re-seleccionar el mismo archivo
+
+    setAvatarUploading(true)
+    try {
+      const url = await avatarService.upload(file, session.user.id)
+      await supabase.from('profiles').update({ avatar_url: url }).eq('id', session.user.id)
+      setAvatarUrl(url)
+      setProfile({ ...profile, avatar_url: url })
+      toast.success('Foto de perfil actualizada')
+    } catch (err) {
+      toast.error(err.message ?? 'No se pudo subir la imagen')
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    setAvatarUploading(true)
+    try {
+      await avatarService.remove(session.user.id)
+      await supabase.from('profiles').update({ avatar_url: null }).eq('id', session.user.id)
+      setAvatarUrl(null)
+      setProfile({ ...profile, avatar_url: null })
+      toast.success('Foto de perfil eliminada')
+    } catch {
+      toast.error('No se pudo eliminar la foto')
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5 items-start">
+    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_280px] lg:items-start">
 
-      {/* ── Columna izquierda — cards grandes + eliminar cuenta al fondo ── */}
-      <div className="flex flex-col gap-5">
+      {/* ── Col derecha: wrapper invisible en mobile (contents) · bloque en desktop ── */}
+      {/* En mobile: cada hijo tiene su propio order. En desktop: un bloque en col-2 sin gap de fila */}
+      <div className="contents lg:flex lg:flex-col lg:gap-4 lg:col-start-2 lg:row-start-1 lg:row-span-3">
 
-        {/* Información personal */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
-          <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Información personal</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Actualiza tus datos de perfil y preferencias</p>
-        </div>
-
-        <div className="p-6 space-y-5">
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-              Nombre completo
-            </label>
-            <input
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
-              placeholder="Tu nombre completo"
-              className={inputCls}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-              Email
-            </label>
-            <input
-              value={email}
-              disabled
-              className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed"
-            />
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">El email no puede cambiarse</p>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-              Moneda preferida
-            </label>
-            <select value={currency} onChange={e => setCurrency(e.target.value)} className={inputCls}>
-              {currencies.map(c => (
-                <option key={c.code} value={c.code}>{c.label}</option>
-              ))}
-            </select>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              Solo cambia los símbolos que ves en la app. No modifica tus datos.
-            </p>
-          </div>
-        </div>
-
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-          <button
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-          >
-            {saveMutation.isPending
-              ? <Loader2 size={15} className="animate-spin" />
-              : <Save size={15} />
-            }
-            {saveMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Mis categorías ────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Mis categorías</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-              Categorías personalizadas para organizar tus finanzas
-            </p>
-          </div>
-          <button
-            onClick={openNewCat}
-            disabled={userCategories.length >= MAX_CUSTOM}
-            className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-          >
-            <Plus size={14} />
-            Nueva
-          </button>
-        </div>
-
-        <div className="p-6 space-y-4">
-          {/* Barra de progreso */}
-          <div>
-            <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mb-1.5">
-              <span>{userCategories.length} de {MAX_CUSTOM} categorías usadas</span>
-              <span className={userCategories.length >= MAX_CUSTOM ? 'text-amber-500 font-medium' : ''}>
-                {userCategories.length}/{MAX_CUSTOM}
-              </span>
-            </div>
-            <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  userCategories.length >= MAX_CUSTOM ? 'bg-amber-400' : 'bg-indigo-500'
-                }`}
-                style={{ width: `${(userCategories.length / MAX_CUSTOM) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Lista */}
-          {userCategories.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                <Bookmark size={18} className="text-slate-400 dark:text-slate-500" />
+        {/* 1. Perfil — primero en mobile · top de col derecha en desktop */}
+        <div className="order-1">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="h-20" style={{ background: gradient }} />
+            <div className="px-6 pb-6">
+              <div className="relative w-16 h-16 -mt-8 mb-3">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={avatarUploading}
+                  className="relative w-16 h-16 rounded-full overflow-hidden border-4 border-white dark:border-slate-900 group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed"
+                  title={avatarUrl ? 'Cambiar foto' : 'Subir foto'}
+                >
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold" style={{ background: gradient }}>
+                      {initials || '?'}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 group-disabled:opacity-100 transition-opacity">
+                    {avatarUploading
+                      ? <Loader2 size={18} className="text-white animate-spin" />
+                      : <Camera   size={18} className="text-white" />
+                    }
+                  </div>
+                </button>
               </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Aún no tienes categorías personalizadas</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Crea hasta {MAX_CUSTOM} para organizar mejor tus finanzas</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-slate-50 dark:divide-slate-800">
-              {userCategories.map(cat => (
-                <li key={cat.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: (cat.color ?? '#06b6d4') + '25' }}>
-                    <Bookmark size={16} style={{ color: cat.color ?? '#06b6d4' }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{cat.name}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">
-                      {cat.type === 'expense' ? 'Gasto' : 'Ingreso'}
-                    </p>
-                  </div>
-                  <div className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color ?? '#06b6d4' }} />
-                  <button
-                    onClick={() => openEditCat(cat)}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-md transition-colors"
-                  >
-                    <Pencil size={13} />
-                  </button>
-                  <button
-                    onClick={() => setConfirmCat(cat)}
-                    className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-md transition-colors"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
 
-          {userCategories.length >= MAX_CUSTOM && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-              Alcanzaste el límite de {MAX_CUSTOM} categorías personalizadas.
-            </p>
-          )}
+              <p className="text-base font-semibold text-slate-900 dark:text-slate-50 leading-tight truncate">{fullName || '—'}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">{email}</p>
+
+              <div className="flex items-center gap-2 mt-2">
+                <button onClick={() => fileInputRef.current?.click()} disabled={avatarUploading} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-40">
+                  {avatarUrl ? 'Cambiar foto' : 'Subir foto'}
+                </button>
+                {avatarUrl && (
+                  <>
+                    <span className="text-slate-300 dark:text-slate-600 select-none">·</span>
+                    <button onClick={handleRemoveAvatar} disabled={avatarUploading} className="text-xs text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:underline disabled:opacity-40">
+                      Eliminar
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {profile?.role === 'admin' && (
+                <span className="inline-flex items-center mt-2 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 px-2 py-0.5 rounded-full">
+                  Administrador
+                </span>
+              )}
+            </div>
+          </div>
+
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" className="hidden" onChange={handleAvatarChange} />
+        </div>
+
+        {/* 4. Contraseña — cuarto en mobile · pegado al perfil en desktop */}
+        <div className="order-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center shrink-0">
+                <KeyRound size={15} className="text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Contraseña</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Última actualización desconocida</p>
+              </div>
+            </div>
+            <button onClick={() => setShowPasswordModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+              <KeyRound size={14} />
+              Cambiar contraseña
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── 2. Información personal — segundo en mobile · col izq row 1 desktop ── */}
+      <div className="order-2 lg:col-start-1 lg:row-start-1">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
+            <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Información personal</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Actualiza tus datos de perfil y preferencias</p>
+          </div>
+
+          <div className="p-6 space-y-5">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Nombre completo</label>
+              <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Tu nombre completo" className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Email</label>
+              <input value={email} disabled className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed" />
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">El email no puede cambiarse</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Moneda preferida</label>
+              <select value={currency} onChange={e => setCurrency(e.target.value)} className={inputCls}>
+                {currencies.map(c => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Solo cambia los símbolos que ves en la app. No modifica tus datos.</p>
+            </div>
+          </div>
+
+          <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+            <button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
+              {saveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+              {saveMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
         </div>
       </div>
 
-        {/* Zona de peligro — siempre al fondo de la columna izquierda */}
+      {/* ── 3. Mis categorías — tercero en mobile · col izq row 2 desktop ── */}
+      <div className="order-3 lg:col-start-1 lg:row-start-2">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Mis categorías</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Categorías personalizadas para organizar tus finanzas</p>
+            </div>
+            <button onClick={openNewCat} disabled={userCategories.length >= MAX_CUSTOM} className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0">
+              <Plus size={14} />
+              Nueva
+            </button>
+          </div>
+
+          <div className="p-6 space-y-4">
+            <div>
+              <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mb-1.5">
+                <span>{userCategories.length} de {MAX_CUSTOM} categorías usadas</span>
+                <span className={userCategories.length >= MAX_CUSTOM ? 'text-amber-500 font-medium' : ''}>{userCategories.length}/{MAX_CUSTOM}</span>
+              </div>
+              <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-500 ${userCategories.length >= MAX_CUSTOM ? 'bg-amber-400' : 'bg-indigo-500'}`} style={{ width: `${(userCategories.length / MAX_CUSTOM) * 100}%` }} />
+              </div>
+            </div>
+
+            {userCategories.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <Bookmark size={18} className="text-slate-400 dark:text-slate-500" />
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Aún no tienes categorías personalizadas</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Crea hasta {MAX_CUSTOM} para organizar mejor tus finanzas</p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-50 dark:divide-slate-800">
+                {userCategories.map(cat => (
+                  <li key={cat.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: (cat.color ?? '#06b6d4') + '25' }}>
+                      <Bookmark size={16} style={{ color: cat.color ?? '#06b6d4' }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{cat.name}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{cat.type === 'expense' ? 'Gasto' : 'Ingreso'}</p>
+                    </div>
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color ?? '#06b6d4' }} />
+                    <button onClick={() => openEditCat(cat)} className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-md transition-colors"><Pencil size={13} /></button>
+                    <button onClick={() => setConfirmCat(cat)} className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-md transition-colors"><Trash2 size={13} /></button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {userCategories.length >= MAX_CUSTOM && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+                Alcanzaste el límite de {MAX_CUSTOM} categorías personalizadas.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 5. Zona de peligro — último en mobile · col izq row 3 desktop ── */}
+      <div className="order-5 lg:col-start-1 lg:row-start-3">
         <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-rose-200 dark:border-rose-900/50 shadow-sm">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950 flex items-center justify-center shrink-0">
@@ -497,62 +575,11 @@ export default function ProfilePage() {
               <p className="text-xs text-slate-400 dark:text-slate-500">Acciones irreversibles</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="w-full flex items-center justify-center gap-2 text-sm font-medium text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-4 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-          >
+          <button onClick={() => setShowDeleteModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-medium text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-4 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
             Eliminar cuenta
           </button>
         </div>
-
-      </div>{/* fin columna izquierda */}
-
-      {/* ── Columna derecha — cards pequeños ─────────────────────────── */}
-      <div className="flex flex-col gap-4">
-
-        {/* Avatar */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="h-20" style={{ background: gradient }} />
-          <div className="px-6 pb-6">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold border-4 border-white dark:border-slate-900 -mt-8 mb-3 shrink-0"
-              style={{ background: gradient }}
-            >
-              {initials || '?'}
-            </div>
-            <p className="text-base font-semibold text-slate-900 dark:text-slate-50 leading-tight truncate">
-              {fullName || '—'}
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">{email}</p>
-            {profile?.role === 'admin' && (
-              <span className="inline-flex items-center mt-2 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 px-2 py-0.5 rounded-full">
-                Administrador
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Contraseña */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center shrink-0">
-              <KeyRound size={15} className="text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Contraseña</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Última actualización desconocida</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowPasswordModal(true)}
-            className="w-full flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-          >
-            <KeyRound size={14} />
-            Cambiar contraseña
-          </button>
-        </div>
-
-      </div>{/* fin columna derecha */}
+      </div>
 
       {showPasswordModal && (
         <ChangePasswordModal

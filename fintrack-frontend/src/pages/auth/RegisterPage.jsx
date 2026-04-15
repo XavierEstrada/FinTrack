@@ -9,7 +9,11 @@ import { useAuth } from '../../hooks/useAuth'
 const schema = z.object({
   fullName:        z.string().min(2, 'Ingresa tu nombre completo'),
   email:           z.string().email('Email inválido'),
-  password:        z.string().min(6, 'Mínimo 6 caracteres'),
+  password: z.string()
+    .min(8,  'Mínimo 8 caracteres')
+    .max(16, 'Máximo 16 caracteres')
+    .regex(/[A-Z]/, 'Debe incluir al menos una letra mayúscula')
+    .regex(/[0-9]/, 'Debe incluir al menos un número'),
   confirmPassword: z.string(),
 }).refine(d => d.password === d.confirmPassword, {
   message: 'Las contraseñas no coinciden',
@@ -138,6 +142,7 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">8-16 car. · mayúscula · número</p>
                 {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
               </div>
               <div>

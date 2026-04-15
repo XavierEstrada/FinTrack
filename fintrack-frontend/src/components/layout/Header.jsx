@@ -1,15 +1,13 @@
 import { LogOut, Menu, Sun, Moon } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
-import { getAvatarGradient } from '../../lib/utils'
 import { useThemeStore } from '../../store/themeStore'
+import UserAvatar from '../ui/UserAvatar'
 
 export default function Header({ title, onMenuClick }) {
   const { dark, toggle } = useThemeStore()
   const { session, profile, logout } = useAuth()
 
   const displayName = profile?.full_name ?? session?.user?.user_metadata?.full_name ?? '…'
-  const initials    = displayName.split(' ').map(n => n[0]).join('').toUpperCase()
-  const gradient    = getAvatarGradient(displayName)
 
   const handleLogout = async () => {
     await logout()
@@ -42,12 +40,7 @@ export default function Header({ title, onMenuClick }) {
         <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 hidden md:block" />
 
         <div className="hidden md:flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: gradient }}
-          >
-            <span className="text-white text-xs font-bold">{initials}</span>
-          </div>
+          <UserAvatar profile={profile} session={session} className="w-8 h-8" />
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{displayName}</span>
         </div>
 
