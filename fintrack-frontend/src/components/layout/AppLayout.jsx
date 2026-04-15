@@ -5,6 +5,7 @@ import { LayoutDashboard, ArrowLeftRight, Wallet, BarChart3, User, ShieldCheck, 
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { useAuthStore } from '../../store/authStore'
+import { useBudgetNotifications } from '../../hooks/useBudgetNotifications'
 
 const titles = {
   '/dashboard':    'Dashboard',
@@ -43,6 +44,8 @@ export default function AppLayout() {
   useEffect(() => {
     document.title = title === APP_NAME ? APP_NAME : `${title} | ${APP_NAME}`
   }, [title])
+  useBudgetNotifications()
+
   const profile     = useAuthStore(s => s.profile)
   const isAdmin     = profile?.role === 'admin'
   const bottomLinks = isAdmin ? [...baseLinks, adminLink] : baseLinks

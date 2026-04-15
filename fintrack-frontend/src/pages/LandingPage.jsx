@@ -130,6 +130,9 @@ export default function LandingPage() {
             <span className="text-lg font-bold tracking-tight">FinTrack</span>
           </div>
           <div className="flex items-center gap-3">
+            <Link to="/showcase" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors hidden sm:inline">
+              Para reclutadores
+            </Link>
             <Link to="/login" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
               Iniciar sesión
             </Link>
@@ -529,7 +532,12 @@ export default function LandingPage() {
             </div>
             <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">FinTrack</span>
           </div>
-          <p className="text-xs text-slate-400 dark:text-slate-500">© 2026 FinTrack · Tu gestor de finanzas personales</p>
+          <div className="flex items-center gap-4">
+            <Link to="/showcase" className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+              Documentación técnica →
+            </Link>
+            <p className="text-xs text-slate-400 dark:text-slate-500">© 2026 FinTrack</p>
+          </div>
         </div>
       </footer>
 

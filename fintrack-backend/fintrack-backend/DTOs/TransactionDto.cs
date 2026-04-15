@@ -22,6 +22,7 @@ public class CreateTransactionDto
     public string Type { get; set; } = "expense";
     public string? Description { get; set; }
     public DateOnly Date { get; set; }
+    public string? ReceiptUrl { get; set; }
 }
 
 public class UpdateTransactionDto
@@ -31,6 +32,7 @@ public class UpdateTransactionDto
     public string Type { get; set; } = "expense";
     public string? Description { get; set; }
     public DateOnly Date { get; set; }
+    public string? ReceiptUrl { get; set; }
 }
 
 public class TransactionListDto

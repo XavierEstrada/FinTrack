@@ -14,10 +14,14 @@ import ProfilePage from '../pages/ProfilePage'
 import AdminPage from '../pages/admin/AdminPage'
 import SavingsPage from '../pages/SavingsPage'
 import NotFoundPage from '../pages/NotFoundPage'
+import ShowcasePage from '../pages/ShowcasePage'
 
 export const router = createBrowserRouter([
   // Landing — shows page for guests, redirects authenticated users to /dashboard
   { path: '/', element: <LandingRoute /> },
+
+  // Public showcase page for recruiters
+  { path: '/showcase', element: <ShowcasePage /> },
 
   // 404 — catch-all
   { path: '*', element: <NotFoundPage /> },
