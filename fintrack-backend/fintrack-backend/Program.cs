@@ -75,5 +75,4 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-app.Run($"http://+:{port}");
+app.Run();
