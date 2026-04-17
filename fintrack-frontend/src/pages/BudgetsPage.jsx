@@ -3,6 +3,7 @@ import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, CalendarRange, Bookmar
 import { SkeletonCardGrid } from '../components/ui/Skeleton'
 import CategoryIcon from '../components/ui/CategoryIcon'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import { toYearMonth, monthDisplay } from '../lib/utils'
 import { useBudgets, useDeleteBudget } from '../hooks/useBudgets'
@@ -40,6 +41,7 @@ const badgeStyles = {
 
 function BudgetCard({ budget, onEdit, onDelete, index }) {
   const fmt       = useFormatCurrency()
+  const { t }     = useTranslation()
   const pct       = budget.amount > 0 ? Math.min((budget.spent / budget.amount) * 100, 100) : 0
   const remaining = budget.amount - budget.spent
   const over      = budget.spent > budget.amount
@@ -65,8 +67,8 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
           <div>
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{budget.categoryName}</p>
             {budget.isAnnual
-              ? <p className="text-xs text-indigo-500 dark:text-indigo-400 flex items-center gap-1"><CalendarRange size={10} />Presupuesto anual</p>
-              : <p className="text-xs text-slate-400 dark:text-slate-500">Presupuesto mensual</p>
+              ? <p className="text-xs text-indigo-500 dark:text-indigo-400 flex items-center gap-1"><CalendarRange size={10} />{t('budgets.annual')}</p>
+              : <p className="text-xs text-slate-400 dark:text-slate-500">{t('budgets.monthly')}</p>
             }
           </div>
         </div>
@@ -100,25 +102,25 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
       {zone === 'warning' && (
         <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-2.5 py-1.5 mb-3 text-xs font-medium">
           <AlertTriangle size={12} className="shrink-0" />
-          Cerca del límite — solo queda {fmt(remaining)}
+          {t('budgets.nearLimit', { amount: fmt(remaining) })}
         </div>
       )}
       {zone === 'full' && (
         <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 rounded-lg px-2.5 py-1.5 mb-3 text-xs font-medium">
           <Ban size={12} className="shrink-0" />
-          Sin presupuesto restante
+          {t('budgets.noRemaining')}
         </div>
       )}
       {zone === 'exceeded' && (
         <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 rounded-lg px-2.5 py-1.5 mb-3 text-xs font-medium">
           <AlertTriangle size={12} className="shrink-0" />
-          Excedido por {fmt(Math.abs(remaining))}
+          {t('budgets.exceededBy', { amount: fmt(Math.abs(remaining)) })}
         </div>
       )}
 
       <div className="flex items-center justify-between text-xs">
         <div>
-          <span className="text-slate-400 dark:text-slate-500">Gastado </span>
+          <span className="text-slate-400 dark:text-slate-500">{t('budgets.spent')} </span>
           <span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(budget.spent)}</span>
         </div>
         <div className="text-right">
@@ -127,12 +129,12 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
             zone === 'warning' ? 'text-amber-600 dark:text-amber-400'    :
                                  'text-rose-600 dark:text-rose-400'
           }`}>
-            {zone === 'ok'       && `${fmt(remaining)} disponible`}
-            {zone === 'warning'  && `${fmt(remaining)} disponible`}
-            {zone === 'full'     && 'Sin presupuesto restante'}
-            {zone === 'exceeded' && `+${fmt(Math.abs(remaining))} excedido`}
+            {zone === 'ok'       && t('budgets.available', { amount: fmt(remaining) })}
+            {zone === 'warning'  && t('budgets.available', { amount: fmt(remaining) })}
+            {zone === 'full'     && t('budgets.noRemaining')}
+            {zone === 'exceeded' && t('budgets.exceededLabel', { amount: fmt(Math.abs(remaining)) })}
           </p>
-          <p className="text-slate-400 dark:text-slate-500">de {fmt(budget.amount)}</p>
+          <p className="text-slate-400 dark:text-slate-500">{t('budgets.of', { amount: fmt(budget.amount) })}</p>
         </div>
       </div>
     </motion.div>
@@ -141,6 +143,7 @@ function BudgetCard({ budget, onEdit, onDelete, index }) {
 
 export default function BudgetsPage() {
   const fmt = useFormatCurrency()
+  const { t } = useTranslation()
   const now = new Date()
   const [currentDate, setCurrentDate] = useState(now)
   const [modalOpen, setModalOpen]         = useState(false)
@@ -172,8 +175,8 @@ export default function BudgetsPage() {
 
   const confirmDelete = () => {
     deleteMutation.mutate(confirmBudget.id, {
-      onSuccess: () => { toast.success('Presupuesto eliminado'); setConfirmBudget(null) },
-      onError:   () => { toast.error('No se pudo eliminar el presupuesto'); setConfirmBudget(null) },
+      onSuccess: () => { toast.success(t('budgets.deleteSuccess')); setConfirmBudget(null) },
+      onError:   () => { toast.error(t('budgets.deleteError')); setConfirmBudget(null) },
     })
   }
 
@@ -194,36 +197,36 @@ export default function BudgetsPage() {
           <button
             onClick={() => setCatModalOpen(true)}
             disabled={userCategories.length >= 3}
-            title={userCategories.length >= 3 ? 'Límite de 3 categorías alcanzado' : 'Agregar categoría personalizada'}
+            title={userCategories.length >= 3 ? t('budgets.categoryLimitReached') : t('budgets.addCustomCategory')}
             className="flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 rounded-lg hover:border-indigo-400 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Bookmark size={14} />
-            <span className="hidden sm:inline">Categoría personalizada</span>
-            <span className="sm:hidden">Cat. personalizada</span>
+            <span className="hidden sm:inline">{t('budgets.addCustomCategory')}</span>
+            <span className="sm:hidden">{t('budgets.customCategoryMobile')}</span>
           </button>
           {canQuickCopy && (
             <button
               onClick={() => setCopyModalOpen(true)}
-              title="Copiar presupuestos del mes anterior"
+              title={t('budgets.copyFromPrevious')}
               className="flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-3 py-2 rounded-lg hover:border-indigo-400 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
             >
               <ClipboardCopy size={14} />
-              <span className="hidden sm:inline">Copiar del mes anterior</span>
-              <span className="sm:hidden">Copiar</span>
+              <span className="hidden sm:inline">{t('budgets.copyPreviousBtn')}</span>
+              <span className="sm:hidden">{t('budgets.copyMobile')}</span>
             </button>
           )}
           <button onClick={openNew}
             className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-            <Plus size={16} />Nuevo presupuesto
+            <Plus size={16} />{t('budgets.newBudget')}
           </button>
         </div>
       </motion.div>
 
       <motion.div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4" variants={container} initial="hidden" animate="show">
         {[
-          { label: 'Total presupuestado', value: totalBudgeted,  color: 'text-slate-800 dark:text-slate-100'      },
-          { label: 'Total gastado',        value: totalSpent,     color: 'text-rose-500 dark:text-rose-400'        },
-          { label: 'Disponible',           value: totalAvailable, color: 'text-emerald-600 dark:text-emerald-400'  },
+          { label: t('budgets.totalBudgeted'), value: totalBudgeted,  color: 'text-slate-800 dark:text-slate-100'      },
+          { label: t('budgets.totalSpent'),    value: totalSpent,     color: 'text-rose-500 dark:text-rose-400'        },
+          { label: t('budgets.availableTotal'),value: totalAvailable, color: 'text-emerald-600 dark:text-emerald-400'  },
         ].map(item => (
           <motion.div key={item.label} variants={cardItem} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{item.label}</p>
@@ -244,7 +247,7 @@ export default function BudgetsPage() {
           <motion.button variants={cardItem} onClick={openNew}
             className="bg-white dark:bg-slate-900 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-5 flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500 hover:border-indigo-300 dark:hover:border-indigo-600 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors group min-h-[160px]">
             <Plus size={20} className="group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-medium">Agregar categoría</span>
+            <span className="text-sm font-medium">{t('budgets.addCategory')}</span>
           </motion.button>
         </motion.div>
       )}
@@ -268,11 +271,11 @@ export default function BudgetsPage() {
         onClose={() => setConfirmBudget(null)}
         onConfirm={confirmDelete}
         loading={deleteMutation.isPending}
-        title="Eliminar presupuesto"
+        title={t('budgets.deleteTitle')}
         description={
           confirmBudget?.isAnnual
-            ? `¿Estás seguro de que quieres eliminar el presupuesto anual de ${confirmBudget?.categoryName}? Se eliminará de todos los meses de ${confirmBudget?.month?.slice(0, 4) ?? 'ese año'}. Esta acción no se puede deshacer.`
-            : `¿Estás seguro de que quieres eliminar el presupuesto de ${confirmBudget?.categoryName}? Esta acción no se puede deshacer.`
+            ? t('budgets.deleteAnnualConfirm', { name: confirmBudget?.categoryName, year: confirmBudget?.month?.slice(0, 4) ?? '' })
+            : t('budgets.deleteMonthlyConfirm', { name: confirmBudget?.categoryName })
         }
       />
     </div>

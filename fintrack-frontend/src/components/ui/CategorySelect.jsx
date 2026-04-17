@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, Check, Bookmark } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import CategoryIcon from './CategoryIcon'
 
 /**
@@ -48,8 +49,10 @@ export default function CategorySelect({
   onChange,
   disabled = false,
   loading = false,
-  placeholder = 'Seleccionar categoría…',
+  placeholder,
 }) {
+  const { t } = useTranslation()
+  const resolvedPlaceholder = placeholder ?? t('categorySelect.placeholder')
   const [open, setOpen] = useState(false)
   const [dropdownStyle, setDropdownStyle] = useState({})
   const buttonRef = useRef(null)
@@ -113,7 +116,7 @@ export default function CategorySelect({
         ].join(' ')}
       >
         {loading ? (
-          <span className="text-slate-400 dark:text-slate-500 flex-1">Cargando categorías…</span>
+          <span className="text-slate-400 dark:text-slate-500 flex-1">{t('categorySelect.loading')}</span>
         ) : selected ? (
           <>
             {selected.isSystem === false
@@ -123,7 +126,7 @@ export default function CategorySelect({
             <span className="flex-1 truncate">{selected.name}</span>
           </>
         ) : (
-          <span className="text-slate-400 dark:text-slate-500 flex-1">{placeholder}</span>
+          <span className="text-slate-400 dark:text-slate-500 flex-1">{resolvedPlaceholder}</span>
         )}
         <ChevronDown
           size={14}
@@ -139,7 +142,7 @@ export default function CategorySelect({
           className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1 overflow-y-auto max-h-52"
         >
           {categories.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-slate-400">Sin categorías disponibles</p>
+            <p className="px-3 py-2 text-sm text-slate-400">{t('categorySelect.empty')}</p>
           ) : (
             <>
               {systemCats.map(c => (
@@ -152,7 +155,7 @@ export default function CategorySelect({
                     <div className="flex-1 h-px bg-slate-100 dark:bg-slate-700" />
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 flex items-center gap-1">
                       <Bookmark size={9} />
-                      Personalizadas
+                      {t('categorySelect.custom')}
                     </span>
                     <div className="flex-1 h-px bg-slate-100 dark:bg-slate-700" />
                   </div>

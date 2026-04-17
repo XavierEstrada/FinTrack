@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Users, ArrowLeftRight, TrendingUp, Plus, Pencil, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { formatDate, getAvatarGradient } from '../../lib/utils'
 import { useFormatCurrency } from '../../hooks/useCurrency'
 import AnimatedNumber from '../../components/ui/AnimatedNumber'
@@ -27,6 +28,7 @@ const rowItem = {
 
 export default function AdminPage() {
   const fmt = useFormatCurrency()
+  const { t } = useTranslation()
   const { data: stats, isLoading: loadingStats } = useAdminStats()
   const { data: users = [], isLoading: loadingUsers } = useAdminUsers()
   const { data: allCategories = [], isLoading: loadingCats } = useCategories()
@@ -46,19 +48,19 @@ export default function AdminPage() {
 
   const confirmDelete = () => {
     deleteMutation.mutate(confirmCat.id, {
-      onSuccess: () => { toast.success('Categoría eliminada'); setConfirmCat(null) },
+      onSuccess: () => { toast.success(t('categoryModal.deleteSuccess')); setConfirmCat(null) },
       onError:   (err) => {
-        const msg = err?.response?.data ?? 'No se pudo eliminar la categoría'
-        toast.error(typeof msg === 'string' ? msg : 'No se pudo eliminar la categoría')
+        const msg = err?.response?.data ?? t('categoryModal.saveError')
+        toast.error(typeof msg === 'string' ? msg : t('categoryModal.saveError'))
         setConfirmCat(null)
       },
     })
   }
 
   const statCards = [
-    { label: 'Usuarios',          value: stats?.totalUsers        ?? 0, icon: Users,          color: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-50 dark:bg-indigo-900/30',   currency: false },
-    { label: 'Transacciones',     value: stats?.totalTransactions ?? 0, icon: ArrowLeftRight, color: 'text-violet-600 dark:text-violet-400',   bg: 'bg-violet-50 dark:bg-violet-900/30',   currency: false },
-    { label: 'Volumen total',     value: stats?.totalVolume       ?? 0, icon: TrendingUp,     color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', currency: true  },
+    { label: t('admin.users'),        value: stats?.totalUsers        ?? 0, icon: Users,          color: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-50 dark:bg-indigo-900/30',   currency: false },
+    { label: t('admin.transactions'), value: stats?.totalTransactions ?? 0, icon: ArrowLeftRight, color: 'text-violet-600 dark:text-violet-400',   bg: 'bg-violet-50 dark:bg-violet-900/30',   currency: false },
+    { label: t('admin.totalVolume'),  value: stats?.totalVolume       ?? 0, icon: TrendingUp,     color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30', currency: true  },
   ]
 
   return (
@@ -105,9 +107,9 @@ export default function AdminPage() {
       >
         <div className="px-4 md:px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Categorías del sistema</p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('admin.systemCategories')}</p>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-              {loadingCats ? 'Cargando…' : `${systemCategories.length} categorías globales`}
+              {loadingCats ? t('common.loading') : t('admin.categoriesCount', { count: systemCategories.length })}
             </p>
           </div>
           <button
@@ -115,7 +117,7 @@ export default function AdminPage() {
             className="flex items-center gap-1.5 text-sm font-medium bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors shrink-0"
           >
             <Plus size={15} />
-            Nueva categoría
+            {t('admin.newCategory')}
           </button>
         </div>
 
@@ -124,14 +126,14 @@ export default function AdminPage() {
             {Array.from({ length: 4 }).map((_, i) => <SkeletonListRow key={i} />)}
           </div>
         ) : systemCategories.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">Sin categorías del sistema</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">{t('admin.noCategories')}</p>
         ) : (
           <div className="divide-y divide-slate-50 dark:divide-slate-800">
             {/* Expense categories */}
             {expenseCats.length > 0 && (
               <div className="px-4 md:px-5 py-3">
                 <p className="text-xs font-semibold text-rose-500 dark:text-rose-400 uppercase tracking-wide mb-3">
-                  Gastos ({expenseCats.length})
+                  {t('admin.expenseCategories', { count: expenseCats.length })}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                   {expenseCats.map(cat => (
@@ -145,7 +147,7 @@ export default function AdminPage() {
             {incomeCats.length > 0 && (
               <div className="px-4 md:px-5 py-3">
                 <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-3">
-                  Ingresos ({incomeCats.length})
+                  {t('admin.incomeCategories', { count: incomeCats.length })}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                   {incomeCats.map(cat => (
@@ -166,9 +168,9 @@ export default function AdminPage() {
         transition={{ duration: 0.3, delay: 0.25 }}
       >
         <div className="px-4 md:px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Usuarios registrados</p>
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('admin.registeredUsers')}</p>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-            {loadingUsers ? 'Cargando…' : `${users.length} cuentas en total`}
+            {loadingUsers ? t('common.loading') : t('admin.totalAccounts', { count: users.length })}
           </p>
         </div>
 
@@ -177,16 +179,16 @@ export default function AdminPage() {
             {Array.from({ length: 4 }).map((_, i) => <SkeletonListRow key={i} />)}
           </div>
         ) : users.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">Sin usuarios</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">{t('admin.noUsers')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[520px]">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-                  <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Usuario</th>
-                  <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Rol</th>
-                  <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Transacciones</th>
-                  <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Registro</th>
+                  <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('admin.colUser')}</th>
+                  <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('admin.colRole')}</th>
+                  <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('admin.colTransactions')}</th>
+                  <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('admin.colRegistered')}</th>
                 </tr>
               </thead>
               <motion.tbody
@@ -220,7 +222,7 @@ export default function AdminPage() {
                             ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                         }`}>
-                          {user.role === 'admin' ? 'Admin' : 'Usuario'}
+                          {user.role === 'admin' ? t('admin.roleAdmin') : t('admin.roleUser')}
                         </span>
                       </td>
                       <td className="px-4 md:px-5 py-3.5 text-right text-slate-600 dark:text-slate-400 font-medium">
@@ -249,8 +251,8 @@ export default function AdminPage() {
         onClose={() => setConfirmCat(null)}
         onConfirm={confirmDelete}
         loading={deleteMutation.isPending}
-        title="Eliminar categoría del sistema"
-        description={`¿Estás seguro de que quieres eliminar "${confirmCat?.name}"? Esta acción no se puede deshacer y fallará si hay transacciones asociadas.`}
+        title={t('admin.deleteCategoryTitle')}
+        description={t('admin.deleteCategoryConfirm', { name: confirmCat?.name })}
       />
     </div>
   )

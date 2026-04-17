@@ -2,33 +2,13 @@ import { useState, useEffect } from 'react'
 import { Outlet, useLocation, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { LayoutDashboard, ArrowLeftRight, Wallet, BarChart3, User, ShieldCheck, PiggyBank } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { useAuthStore } from '../../store/authStore'
 import { useBudgetNotifications } from '../../hooks/useBudgetNotifications'
 
-const titles = {
-  '/dashboard':    'Dashboard',
-  '/transactions': 'Transacciones',
-  '/budgets':      'Presupuestos',
-  '/savings':      'Ahorros',
-  '/reports':      'Reportes',
-  '/profile':      'Mi Perfil',
-  '/admin':        'Administración',
-}
-
 const APP_NAME = 'FinTrack'
-
-const baseLinks = [
-  { to: '/dashboard',    label: 'Inicio',        icon: LayoutDashboard },
-  { to: '/transactions', label: 'Transacciones', icon: ArrowLeftRight  },
-  { to: '/budgets',      label: 'Presupuestos',  icon: Wallet          },
-  { to: '/savings',      label: 'Ahorros',       icon: PiggyBank       },
-  { to: '/reports',      label: 'Reportes',      icon: BarChart3       },
-  { to: '/profile',      label: 'Perfil',        icon: User            },
-]
-
-const adminLink = { to: '/admin', label: 'Admin', icon: ShieldCheck }
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
@@ -37,9 +17,32 @@ const pageVariants = {
 }
 
 export default function AppLayout() {
+  const { t } = useTranslation()
   const location    = useLocation()
-  const title       = titles[location.pathname] ?? APP_NAME
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const titles = {
+    '/dashboard':    t('nav.dashboard'),
+    '/transactions': t('nav.transactions'),
+    '/budgets':      t('nav.budgets'),
+    '/savings':      t('nav.savings'),
+    '/reports':      t('nav.reports'),
+    '/profile':      t('nav.profile'),
+    '/admin':        t('nav.admin'),
+  }
+
+  const baseLinks = [
+    { to: '/dashboard',    label: t('nav.dashboard'),    icon: LayoutDashboard },
+    { to: '/transactions', label: t('nav.transactions'), icon: ArrowLeftRight  },
+    { to: '/budgets',      label: t('nav.budgets'),      icon: Wallet          },
+    { to: '/savings',      label: t('nav.savings'),      icon: PiggyBank       },
+    { to: '/reports',      label: t('nav.reports'),      icon: BarChart3       },
+    { to: '/profile',      label: t('nav.profile'),      icon: User            },
+  ]
+
+  const adminLink = { to: '/admin', label: t('nav.admin'), icon: ShieldCheck }
+
+  const title = titles[location.pathname] ?? APP_NAME
 
   useEffect(() => {
     document.title = title === APP_NAME ? APP_NAME : `${title} | ${APP_NAME}`

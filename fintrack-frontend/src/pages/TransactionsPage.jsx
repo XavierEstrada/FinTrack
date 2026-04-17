@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight, Bookmark } from 'lucide-react'
 import { SkeletonRow } from '../components/ui/Skeleton'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { formatDate } from '../lib/utils'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import { useTransactions, useDeleteTransaction } from '../hooks/useTransactions'
@@ -17,6 +18,7 @@ const inputCls = 'text-sm border border-slate-200 dark:border-slate-700 rounded-
 
 export default function TransactionsPage() {
   const fmt = useFormatCurrency()
+  const { t } = useTranslation()
   const [search, setSearch]                 = useState('')
   const [typeFilter, setTypeFilter]         = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -54,8 +56,8 @@ export default function TransactionsPage() {
 
   const confirmDelete = () => {
     deleteMutation.mutate(confirmTx.id, {
-      onSuccess: () => { toast.success('Transacción eliminada'); setConfirmTx(null) },
-      onError:   () => { toast.error('No se pudo eliminar la transacción'); setConfirmTx(null) },
+      onSuccess: () => { toast.success(t('transactions.deleteSuccess')); setConfirmTx(null) },
+      onError:   () => { toast.error(t('transactions.deleteError')); setConfirmTx(null) },
     })
   }
 
@@ -75,19 +77,19 @@ export default function TransactionsPage() {
             <input
               value={search}
               onChange={handleFilterChange(setSearch)}
-              placeholder="Buscar…"
+              placeholder={t('transactions.searchPlaceholder')}
               className={`w-full pl-9 pr-3 py-2 ${inputCls}`}
             />
           </div>
 
           <select value={typeFilter} onChange={handleFilterChange(setTypeFilter)} className={inputCls}>
-            <option value="">Todos los tipos</option>
-            <option value="income">Ingresos</option>
-            <option value="expense">Gastos</option>
+            <option value="">{t('transactions.allTypes')}</option>
+            <option value="income">{t('common.incomes')}</option>
+            <option value="expense">{t('common.expenses')}</option>
           </select>
 
           <select value={categoryFilter} onChange={handleFilterChange(setCategoryFilter)} className={inputCls}>
-            <option value="">Todas las categorías</option>
+            <option value="">{t('transactions.allCategories')}</option>
             {categories.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -96,12 +98,12 @@ export default function TransactionsPage() {
           <button
             onClick={() => setCatModalOpen(true)}
             disabled={userCategories.length >= 3}
-            title={userCategories.length >= 3 ? 'Límite de 3 categorías alcanzado' : 'Agregar categoría personalizada'}
+            title={userCategories.length >= 3 ? t('transactions.categoryLimitReached') : t('transactions.addCustomCategory')}
             className="flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 rounded-lg hover:border-indigo-400 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
           >
             <Bookmark size={14} />
-            <span className="hidden sm:inline">Categoría personalizada</span>
-            <span className="sm:hidden">Cat. personalizada</span>
+            <span className="hidden sm:inline">{t('transactions.addCustomCategory')}</span>
+            <span className="sm:hidden">{t('transactions.customCategoryMobile')}</span>
           </button>
         </div>
 
@@ -110,7 +112,7 @@ export default function TransactionsPage() {
           className="flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shrink-0"
         >
           <Plus size={16} />
-          Nueva transacción
+          {t('transactions.newTransaction')}
         </button>
       </div>
 
@@ -118,22 +120,22 @@ export default function TransactionsPage() {
       {hasFilters && !isLoading && (
         <div className="flex flex-wrap items-center gap-2 sm:gap-4 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-sm">
           <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide shrink-0">
-            {total} resultado{total !== 1 ? 's' : ''}
+            {t('transactions.results', { count: total })}
           </span>
           <span className="w-px h-4 bg-slate-200 dark:bg-slate-700 hidden sm:block" />
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-            <span className="text-slate-500 dark:text-slate-400 text-xs">Ingresos:</span>
+            <span className="text-slate-500 dark:text-slate-400 text-xs">{t('transactions.incomeLabel')}</span>
             <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs">+{fmt(totalIncome)}</span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-rose-400 shrink-0" />
-            <span className="text-slate-500 dark:text-slate-400 text-xs">Gastos:</span>
+            <span className="text-slate-500 dark:text-slate-400 text-xs">{t('transactions.expenseLabel')}</span>
             <span className="font-semibold text-rose-500 dark:text-rose-400 text-xs">−{fmt(totalExpense)}</span>
           </span>
           <span className="w-px h-4 bg-slate-200 dark:bg-slate-700 hidden sm:block" />
           <span className="flex items-center gap-1.5">
-            <span className="text-slate-500 dark:text-slate-400 text-xs">Balance:</span>
+            <span className="text-slate-500 dark:text-slate-400 text-xs">{t('transactions.balanceLabel')}</span>
             <span className={`font-semibold text-xs ${totalIncome - totalExpense >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-500 dark:text-rose-400'}`}>
               {totalIncome - totalExpense >= 0 ? '+' : '−'}{fmt(Math.abs(totalIncome - totalExpense))}
             </span>
@@ -147,12 +149,12 @@ export default function TransactionsPage() {
           <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-                <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Fecha</th>
-                <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Descripción</th>
-                <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Categoría</th>
-                <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Tipo</th>
-                <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Monto</th>
-                <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Acciones</th>
+                <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('transactions.colDate')}</th>
+                <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('transactions.colDescription')}</th>
+                <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('transactions.colCategory')}</th>
+                <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('transactions.colType')}</th>
+                <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('transactions.colAmount')}</th>
+                <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('transactions.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -161,7 +163,7 @@ export default function TransactionsPage() {
               {isError && (
                 <tr>
                   <td colSpan={6} className="px-5 py-10 text-center text-rose-400 text-sm">
-                    Error al cargar las transacciones
+                    {t('transactions.loadError')}
                   </td>
                 </tr>
               )}
@@ -196,7 +198,7 @@ export default function TransactionsPage() {
                         ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                         : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
                     }`}>
-                      {tx.type === 'income' ? 'Ingreso' : 'Gasto'}
+                      {tx.type === 'income' ? t('common.income') : t('common.expense')}
                     </span>
                   </td>
                   <td className={`px-4 md:px-5 py-3.5 text-right font-semibold ${
@@ -237,7 +239,7 @@ export default function TransactionsPage() {
               {!isLoading && !isError && transactions.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
-                    No se encontraron transacciones
+                    {t('transactions.empty')}
                   </td>
                 </tr>
               )}
@@ -248,7 +250,7 @@ export default function TransactionsPage() {
         {/* Pagination */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 md:px-5 py-3 border-t border-slate-100 dark:border-slate-800">
           <p className="text-xs text-slate-400 dark:text-slate-500">
-            {total} transacción{total !== 1 ? 'es' : ''} en total
+            {t('transactions.totalCount', { count: total })}
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -305,8 +307,8 @@ export default function TransactionsPage() {
         onClose={() => setConfirmTx(null)}
         onConfirm={confirmDelete}
         loading={deleteMutation.isPending}
-        title="Eliminar transacción"
-        description={`¿Estás seguro de que quieres eliminar "${confirmTx?.description}"? Esta acción no se puede deshacer.`}
+        title={t('transactions.deleteTitle')}
+        description={t('transactions.deleteConfirm', { name: confirmTx?.description })}
       />
 
       <CategoryFormModal

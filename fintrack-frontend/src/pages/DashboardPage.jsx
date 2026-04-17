@@ -1,6 +1,7 @@
 import { TrendingUp, TrendingDown, DollarSign, PiggyBank, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { formatRelativeDate, monthLabel, toYearMonth, monthDisplay } from '../lib/utils'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
@@ -30,10 +31,10 @@ const cardItem = {
   show:   { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
 }
 
-function BarChart({ data = [] }) {
+function BarChart({ data = [], noDataLabel }) {
   if (!data.length) return (
     <div className="h-44 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500">
-      Sin datos para mostrar
+      {noDataLabel}
     </div>
   )
   const max = Math.max(...data.flatMap(d => [d.income, d.expense]), 1)
@@ -69,6 +70,7 @@ function BarChart({ data = [] }) {
 
 export default function DashboardPage() {
   const fmt = useFormatCurrency()
+  const { t } = useTranslation()
   const { data: summary,  isLoading: loadingSummary }  = useSummary(from, to)
   const { data: byCategory = [] }                       = useByCategory(from, to)
   const { data: trend = [] }                            = useMonthlyTrend(6)
@@ -81,21 +83,21 @@ export default function DashboardPage() {
 
   const kpis = [
     {
-      label: 'Ingresos del mes',
+      label: t('dashboard.monthlyIncome'),
       value: summary?.totalIncome  ?? 0,
       icon: TrendingUp,
       color: 'text-emerald-600 dark:text-emerald-400',
       bg:    'bg-emerald-50 dark:bg-emerald-900/30',
     },
     {
-      label: 'Gastos del mes',
+      label: t('dashboard.monthlyExpenses'),
       value: summary?.totalExpense ?? 0,
       icon: TrendingDown,
       color: 'text-rose-500 dark:text-rose-400',
       bg:    'bg-rose-50 dark:bg-rose-900/30',
     },
     {
-      label: 'Balance neto',
+      label: t('dashboard.netBalance'),
       value: summary?.balance      ?? 0,
       icon: DollarSign,
       color: 'text-indigo-600 dark:text-indigo-400',
@@ -151,11 +153,11 @@ export default function DashboardPage() {
                 <PiggyBank size={18} className="text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Metas de ahorro — {monthDisplay(currentMonth)}</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('dashboard.savingsGoals', { month: monthDisplay(currentMonth) })}</p>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                   {metGoals === totalGoals
-                    ? `¡Todas las metas cumplidas!`
-                    : `${metGoals} de ${totalGoals} ${totalGoals === 1 ? 'meta cumplida' : 'metas cumplidas'}`}
+                    ? t('dashboard.allGoalsMet')
+                    : t('dashboard.goalsMetOf', { met: metGoals, total: totalGoals })}
                 </p>
               </div>
             </div>
@@ -183,20 +185,20 @@ export default function DashboardPage() {
       >
         <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Ingresos vs Gastos</p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('dashboard.incomeVsExpenses')}</p>
             <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 dark:bg-emerald-500 inline-block" /> Ingresos</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-300 dark:bg-rose-500 inline-block" /> Gastos</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 dark:bg-emerald-500 inline-block" /> {t('common.incomes')}</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-rose-300 dark:bg-rose-500 inline-block" /> {t('common.expenses')}</span>
             </div>
           </div>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Últimos 6 meses</p>
-          <BarChart data={trend} />
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">{t('dashboard.last6Months')}</p>
+          <BarChart data={trend} noDataLabel={t('dashboard.noData')} />
         </div>
 
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">Gastos por categoría</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Mes actual</p>
-          <CategoryPieChart data={byCategory} fmt={fmt} size={220} emptyMessage="Sin gastos en este período" />
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">{t('dashboard.expensesByCategory')}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">{t('dashboard.currentMonth')}</p>
+          <CategoryPieChart data={byCategory} fmt={fmt} size={220} emptyMessage={t('dashboard.noExpenses')} />
         </div>
       </motion.div>
 
@@ -208,14 +210,14 @@ export default function DashboardPage() {
         transition={{ duration: 0.35, delay: 0.3, ease: 'easeOut' }}
       >
         <div className="flex items-center justify-between px-4 md:px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Últimas transacciones</p>
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('dashboard.recentTransactions')}</p>
           <Link to="/transactions" className="flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
-            Ver todas <ArrowRight size={13} />
+            {t('dashboard.viewAll')} <ArrowRight size={13} />
           </Link>
         </div>
         {recent.length === 0 ? (
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-8">
-            No hay transacciones recientes
+            {t('dashboard.noRecentTransactions')}
           </p>
         ) : (
           <motion.ul

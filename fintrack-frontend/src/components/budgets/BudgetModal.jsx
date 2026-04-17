@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { CalendarRange } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../ui/Modal'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import CategorySelect from '../ui/CategorySelect'
@@ -26,6 +27,7 @@ const errCls = 'text-red-500 text-xs mt-1'
 const currentMonth = new Date().toISOString().slice(0, 7)
 
 export default function BudgetModal({ isOpen, onClose, budget = null, defaultMonth }) {
+  const { t } = useTranslation()
   const isEditing      = !!budget
   const currencySymbol = useCurrencySymbol()
   const { data: categories = [], isLoading: loadingCategories } = useCategories()
@@ -104,11 +106,11 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
         month:      monthValue,
         isAnnual:   data.isAnnual ?? false,
       })
-      toast.success(isEditing ? 'Presupuesto actualizado' : 'Presupuesto creado')
+      toast.success(isEditing ? t('budgetModal.updateSuccess') : t('budgetModal.createSuccess'))
       onClose()
     } catch {
       setCleaning(false)
-      toast.error('No se pudo guardar el presupuesto')
+      toast.error(t('budgetModal.saveError'))
     }
   }
 
@@ -122,14 +124,14 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} onRequestClose={handleClose} title={isEditing ? 'Editar presupuesto' : 'Nuevo presupuesto'} size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} onRequestClose={handleClose} title={isEditing ? t('budgetModal.editTitle') : t('budgetModal.newTitle')} size="sm">
       <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
 
         <div>
-          <label className={label}>Categoría</label>
+          <label className={label}>{t('common.category')}</label>
           {allTaken ? (
             <p className="text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50">
-              Ha registrado todas las categorías disponibles para este mes.
+              {t('budgetModal.allCategoriesUsed')}
             </p>
           ) : (
             <Controller
@@ -150,7 +152,7 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
         </div>
 
         <div>
-          <label className={label}>Monto límite {isAnnual ? 'mensual' : 'mensual'}</label>
+          <label className={label}>{t('budgetModal.limitAmount')}</label>
           <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
             <span className="pl-3 pr-1.5 text-slate-400 dark:text-slate-500 text-sm shrink-0">{currencySymbol}</span>
             <input
@@ -183,16 +185,16 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
                 <div>
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                     <CalendarRange size={14} className="text-indigo-500" />
-                    Presupuesto anual
+                    {t('budgetModal.annualBudget')}
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                    Se aplica automáticamente a todos los meses del año seleccionado
+                    {t('budgetModal.annualHint')}
                   </p>
                 </div>
               </label>
               {isEditing && (
                 <p className="text-xs text-amber-500 dark:text-amber-400 mt-1.5 ml-12">
-                  Para cambiar el tipo debes crear el presupuesto desde cero — al hacerlo como anual se reemplazarán todos los presupuestos mensuales de esa categoría en ese año.
+                  {t('budgetModal.changeTypeWarning')}
                 </p>
               )}
             </div>
@@ -200,7 +202,7 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
         />
 
         <div>
-          <label className={label}>{isAnnual ? 'Año' : 'Mes'}</label>
+          <label className={label}>{isAnnual ? t('common.year') : t('common.month')}</label>
           <input
             {...register('month')}
             type="month"
@@ -209,7 +211,7 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
           {isAnnual && (
             <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1 flex items-center gap-1">
               <CalendarRange size={11} />
-              Solo se usa el año — aparecerá en todos los meses de {watch('month')?.slice(0, 4) ?? '…'}
+              {t('budgetModal.yearOnly', { year: watch('month')?.slice(0, 4) ?? '…' })}
             </p>
           )}
           {errors.month && <p className={errCls}>{errors.month.message}</p>}
@@ -218,11 +220,11 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <button type="button" onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-            Cancelar
+            {t('common.cancel')}
           </button>
           <button type="submit" disabled={isSubmitting || cleaning || allTaken}
             className="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
-            {cleaning ? 'Preparando…' : isSubmitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear presupuesto'}
+            {cleaning ? t('common.processing') : isSubmitting ? t('common.saving') : isEditing ? t('common.save') : t('budgetModal.createBtn')}
           </button>
         </div>
       </form>
@@ -231,9 +233,9 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
         isOpen={showCloseConfirm}
         onClose={() => setShowCloseConfirm(false)}
         onConfirm={() => { setShowCloseConfirm(false); onClose() }}
-        title="¿Descartar cambios?"
-        description="Tienes cambios sin guardar. Si cierras ahora, se perderán."
-        confirmLabel="Descartar"
+        title={t('common.discardChanges')}
+        description={t('common.unsavedChanges')}
+        confirmLabel={t('common.discard')}
         variant="warning"
       />
 
@@ -241,10 +243,10 @@ export default function BudgetModal({ isOpen, onClose, budget = null, defaultMon
         isOpen={showAnnualConfirm}
         onClose={() => { setShowAnnualConfirm(false); setPendingData(null) }}
         onConfirm={() => { setShowAnnualConfirm(false); doSave(pendingData) }}
-        title="Crear presupuesto anual"
-        description={`Se eliminarán todos los presupuestos mensuales existentes de esta categoría en ${pendingData?.month?.slice(0, 4) ?? 'ese año'} y se creará un presupuesto anual en su lugar. ¿Deseas continuar?`}
-        confirmLabel="Confirmar"
-        loadingLabel="Procesando…"
+        title={t('budgetModal.confirmAnnualTitle')}
+        description={t('budgetModal.confirmAnnualBody', { year: pendingData?.month?.slice(0, 4) ?? '…' })}
+        confirmLabel={t('common.confirm')}
+        loadingLabel={t('common.processing')}
         variant="warning"
       />
     </Modal>

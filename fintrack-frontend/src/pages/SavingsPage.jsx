@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, PiggyBank, Target, CheckCircle2, TrendingUp } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
 import { SkeletonCardGrid } from '../components/ui/Skeleton'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
@@ -21,6 +22,7 @@ function goalZone(pct) {
 
 function SavingsGoalCard({ goal, onEdit, onDelete, index }) {
   const fmt      = useFormatCurrency()
+  const { t }    = useTranslation()
   const rawPct   = goal.targetAmount > 0 ? (goal.saved / goal.targetAmount) * 100 : 0
   const pct      = Math.min(rawPct, 100)
   const zone     = goalZone(rawPct)
@@ -46,7 +48,7 @@ function SavingsGoalCard({ goal, onEdit, onDelete, index }) {
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{goal.name}</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Meta mensual</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{t('savings.monthlyGoal')}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -84,22 +86,22 @@ function SavingsGoalCard({ goal, onEdit, onDelete, index }) {
       {zone === 'met' && (
         <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-2.5 py-1.5 mb-3 text-xs font-medium">
           <CheckCircle2 size={12} className="shrink-0" />
-          Meta alcanzada este mes
+          {t('savings.goalReached')}
         </div>
       )}
 
       <div className="flex items-center justify-between text-xs">
         <div>
-          <span className="text-slate-400 dark:text-slate-500">Ahorrado </span>
+          <span className="text-slate-400 dark:text-slate-500">{t('savings.savedThisMonth')} </span>
           <span className="font-semibold text-slate-700 dark:text-slate-300">{fmt(goal.saved)}</span>
         </div>
         <div className="text-right">
           <p className={`font-semibold ${
             zone === 'met' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'
           }`}>
-            {zone === 'met' ? 'Completada' : `Faltan ${fmt(remaining)}`}
+            {zone === 'met' ? t('savings.completed') : t('savings.remaining', { amount: fmt(remaining) })}
           </p>
-          <p className="text-slate-400 dark:text-slate-500">de {fmt(goal.targetAmount)}</p>
+          <p className="text-slate-400 dark:text-slate-500">{t('savings.of', { amount: fmt(goal.targetAmount) })}</p>
         </div>
       </div>
     </motion.div>
@@ -108,6 +110,7 @@ function SavingsGoalCard({ goal, onEdit, onDelete, index }) {
 
 export default function SavingsPage() {
   const fmt  = useFormatCurrency()
+  const { t } = useTranslation()
   const now  = new Date()
   const [currentDate, setCurrentDate] = useState(now)
   const [modalOpen, setModalOpen]     = useState(false)
@@ -126,8 +129,8 @@ export default function SavingsPage() {
 
   const confirmDelete = () => {
     deleteMutation.mutate(confirmGoal.id, {
-      onSuccess: () => { toast.success('Meta eliminada'); setConfirmGoal(null) },
-      onError:   () => { toast.error('No se pudo eliminar la meta'); setConfirmGoal(null) },
+      onSuccess: () => { toast.success(t('savings.deleteSuccess')); setConfirmGoal(null) },
+      onError:   () => { toast.error(t('savings.deleteError')); setConfirmGoal(null) },
     })
   }
 
@@ -147,16 +150,16 @@ export default function SavingsPage() {
         </div>
         <button onClick={openNew}
           className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-          <Plus size={16} />Nueva meta
+          <Plus size={16} />{t('savings.newGoal')}
         </button>
       </motion.div>
 
       {/* Summary cards */}
       <motion.div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4" variants={container} initial="hidden" animate="show">
         {[
-          { label: 'Total objetivos',   value: totalTarget, color: 'text-slate-800 dark:text-slate-100',     icon: Target      },
-          { label: 'Ahorrado este mes', value: saved,       color: 'text-indigo-600 dark:text-indigo-400',   icon: PiggyBank   },
-          { label: 'Metas cumplidas',   value: metCount,    color: 'text-emerald-600 dark:text-emerald-400', icon: CheckCircle2, isCount: true },
+          { label: t('savings.totalGoals'),     value: totalTarget, color: 'text-slate-800 dark:text-slate-100',     icon: Target      },
+          { label: t('savings.savedThisMonth'), value: saved,       color: 'text-indigo-600 dark:text-indigo-400',   icon: PiggyBank   },
+          { label: t('savings.goalsMet'),       value: metCount,    color: 'text-emerald-600 dark:text-emerald-400', icon: CheckCircle2, isCount: true },
         ].map(item => (
           <motion.div key={item.label} variants={cardItem} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
@@ -180,10 +183,7 @@ export default function SavingsPage() {
           className="flex items-start gap-2.5 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/40 rounded-xl px-4 py-3 text-xs text-indigo-700 dark:text-indigo-300"
         >
           <TrendingUp size={14} className="shrink-0 mt-0.5" />
-          <span>
-            El progreso se calcula automáticamente como la diferencia entre tus <strong>ingresos</strong> y <strong>gastos</strong> de este mes ({fmt(saved)} ahorrados).
-            Todas las metas del mes comparten el mismo saldo disponible.
-          </span>
+          <span dangerouslySetInnerHTML={{ __html: t('savings.howItWorks', { amount: fmt(saved) }).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
         </motion.div>
       )}
 
@@ -198,7 +198,7 @@ export default function SavingsPage() {
           <motion.button variants={cardItem} onClick={openNew}
             className="bg-white dark:bg-slate-900 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-5 flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500 hover:border-indigo-300 dark:hover:border-indigo-600 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors group min-h-[160px]">
             <Plus size={20} className="group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-medium">Nueva meta</span>
+            <span className="text-sm font-medium">{t('savings.newGoal')}</span>
           </motion.button>
         </motion.div>
       )}
@@ -212,12 +212,12 @@ export default function SavingsPage() {
             <PiggyBank size={26} className="text-indigo-400" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Sin metas de ahorro</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Crea tu primera meta para este mes y empieza a ahorrar.</p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('savings.empty')}</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('savings.emptyHint')}</p>
           </div>
           <button onClick={openNew}
             className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-            <Plus size={15} />Nueva meta
+            <Plus size={15} />{t('savings.newGoal')}
           </button>
         </motion.div>
       )}
@@ -234,8 +234,8 @@ export default function SavingsPage() {
         onClose={() => setConfirmGoal(null)}
         onConfirm={confirmDelete}
         loading={deleteMutation.isPending}
-        title="Eliminar meta"
-        description={`¿Estás seguro de que quieres eliminar la meta "${confirmGoal?.name}"? Esta acción no se puede deshacer.`}
+        title={t('savings.deleteTitle')}
+        description={t('savings.deleteConfirm', { name: confirmGoal?.name })}
       />
     </div>
   )
