@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { Paperclip, X, FileText, Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../ui/Modal'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import CategorySelect from '../ui/CategorySelect'
@@ -12,14 +13,6 @@ import { useCreateTransaction, useUpdateTransaction } from '../../hooks/useTrans
 import { useCurrencySymbol } from '../../hooks/useCurrency'
 import { useAuthStore } from '../../store/authStore'
 import { receiptService } from '../../services/receiptService'
-
-const schema = z.object({
-  description: z.string().min(1, 'La descripción es requerida'),
-  amount:      z.coerce.number().positive('El monto debe ser mayor a 0'),
-  type:        z.enum(['income', 'expense']),
-  categoryId:  z.string().min(1, 'Selecciona una categoría'),
-  date:        z.string().min(1, 'La fecha es requerida'),
-})
 
 const field  = 'w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500'
 const label  = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5'
@@ -35,7 +28,16 @@ function isImage(file) {
   return file?.type?.startsWith('image/')
 }
 
+const schema = z.object({
+  description: z.string().min(1),
+  amount:      z.coerce.number().positive(),
+  type:        z.enum(['income', 'expense']),
+  categoryId:  z.string().min(1),
+  date:        z.string().min(1),
+})
+
 export default function TransactionModal({ isOpen, onClose, transaction = null }) {
+  const { t } = useTranslation()
   const isEditing      = !!transaction
   const today          = new Date().toISOString().split('T')[0]
   const currencySymbol = useCurrencySymbol()
@@ -137,15 +139,15 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
 
       if (isEditing) {
         await updateMutation.mutateAsync({ id: transaction.id, data: payload })
-        toast.success('Transacción actualizada', { description: data.description })
+        toast.success(t('transactionModal.updateSuccess'), { description: data.description })
       } else {
         await createMutation.mutateAsync(payload)
-        toast.success('Transacción agregada', { description: data.description })
+        toast.success(t('transactionModal.createSuccess'), { description: data.description })
       }
       onClose()
     } catch (err) {
       setUploading(false)
-      toast.error(err?.message ?? 'No se pudo guardar la transacción')
+      toast.error(err?.message ?? t('common.error'))
     }
   }
 
@@ -153,28 +155,28 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
   const receiptLabel = pendingFile
     ? pendingFile.name
     : existingReceiptUrl && !receiptRemoved
-      ? 'Comprobante adjunto'
+      ? t('transactionModal.receiptAttached')
       : null
 
   const receiptSubLabel = pendingFile
     ? formatBytes(pendingFile.size)
     : existingReceiptUrl && !receiptRemoved
-      ? 'Guardado'
+      ? t('transactionModal.saved')
       : null
 
   const isBusy = isSubmitting || uploading
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} onRequestClose={handleClose} title={isEditing ? 'Editar transacción' : 'Nueva transacción'}>
+    <Modal isOpen={isOpen} onClose={onClose} onRequestClose={handleClose} title={isEditing ? t('transactionModal.editTitle') : t('transactionModal.newTitle')}>
       <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-4">
 
         {/* Tipo */}
         <div>
-          <p className={label}>Tipo</p>
+          <p className={label}>{t('common.type')}</p>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: 'expense', label: 'Gasto',   active: 'bg-rose-500 text-white border-rose-500'       },
-              { value: 'income',  label: 'Ingreso',  active: 'bg-emerald-500 text-white border-emerald-500' },
+              { value: 'expense', label: t('common.expense'), active: 'bg-rose-500 text-white border-rose-500'       },
+              { value: 'income',  label: t('common.income'),  active: 'bg-emerald-500 text-white border-emerald-500' },
             ].map(opt => (
               <label
                 key={opt.value}
@@ -193,10 +195,10 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
 
         {/* Descripción */}
         <div>
-          <label className={label}>Descripción</label>
+          <label className={label}>{t('common.description')}</label>
           <input
             {...register('description')}
-            placeholder="Ej: Supermercado, Salario…"
+            placeholder={t('transactionModal.descriptionPlaceholder')}
             className={field}
           />
           {errors.description && <p className={errCls}>{errors.description.message}</p>}
@@ -205,7 +207,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
         {/* Monto y fecha */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={label}>Monto</label>
+            <label className={label}>{t('common.amount')}</label>
             <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
               <span className="pl-3 pr-1.5 text-slate-400 dark:text-slate-500 text-sm shrink-0">{currencySymbol}</span>
               <input
@@ -218,7 +220,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
           </div>
 
           <div>
-            <label className={label}>Fecha</label>
+            <label className={label}>{t('common.date')}</label>
             <input {...register('date')} type="date" className={field} />
             {errors.date && <p className={errCls}>{errors.date.message}</p>}
           </div>
@@ -226,7 +228,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
 
         {/* Categoría */}
         <div>
-          <label className={label}>Categoría</label>
+          <label className={label}>{t('common.category')}</label>
           <Controller
             name="categoryId"
             control={control}
@@ -244,7 +246,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
 
         {/* Comprobante */}
         <div>
-          <label className={label}>Comprobante <span className="text-slate-300 dark:text-slate-600 font-normal">(opcional)</span></label>
+          <label className={label}>{t('transactionModal.receipt')}</label>
 
           {hasReceipt ? (
             <div className="flex items-center gap-3 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50">
@@ -271,7 +273,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
                       rel="noreferrer"
                       className="text-[11px] text-indigo-500 dark:text-indigo-400 hover:underline"
                     >
-                      Ver
+                      {t('transactionModal.view')}
                     </a>
                   )}
                   {/* Reemplazar */}
@@ -280,7 +282,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
                     onClick={() => fileInputRef.current?.click()}
                     className="text-[11px] text-indigo-500 dark:text-indigo-400 hover:underline"
                   >
-                    Reemplazar
+                    {t('transactionModal.replace')}
                   </button>
                 </div>
               </div>
@@ -301,7 +303,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
               className="w-full flex items-center gap-2 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2.5 text-sm text-slate-400 dark:text-slate-500 hover:border-indigo-400 dark:hover:border-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors"
             >
               <Paperclip size={14} />
-              Adjuntar comprobante — JPG, PNG, PDF · máx. 10 MB
+              {t('transactionModal.attachReceipt')}
             </button>
           )}
 
@@ -321,7 +323,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
             onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
-            Cancelar
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
@@ -331,7 +333,7 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
             }`}
           >
             {isBusy && <Loader2 size={14} className="animate-spin" />}
-            {uploading ? 'Subiendo…' : isSubmitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Agregar'}
+            {uploading ? t('transactionModal.uploading') : isSubmitting ? t('common.saving') : isEditing ? t('common.save') : t('transactionModal.add')}
           </button>
         </div>
       </form>
@@ -340,9 +342,9 @@ export default function TransactionModal({ isOpen, onClose, transaction = null }
         isOpen={showCloseConfirm}
         onClose={() => setShowCloseConfirm(false)}
         onConfirm={() => { setShowCloseConfirm(false); onClose() }}
-        title="¿Descartar cambios?"
-        description="Tienes cambios sin guardar. Si cierras ahora, se perderán."
-        confirmLabel="Descartar"
+        title={t('common.discardChanges')}
+        description={t('common.unsavedChanges')}
+        confirmLabel={t('common.discard')}
         variant="warning"
       />
     </Modal>

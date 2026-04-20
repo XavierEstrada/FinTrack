@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { ClipboardCopy } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../ui/Modal'
 import CategoryIcon from '../ui/CategoryIcon'
 import { useBudgets, useUpsertBudget } from '../../hooks/useBudgets'
@@ -13,14 +14,16 @@ function prevMonthOf(ym) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-function monthLabel(ym) {
+function monthLabel(ym, locale = 'es-ES') {
   const [y, m] = ym.split('-').map(Number)
-  const label = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(y, m - 1))
+  const label = new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(y, m - 1))
   return label.charAt(0).toUpperCase() + label.slice(1)
 }
 
 export default function QuickCopyModal({ isOpen, onClose, targetMonth, existingBudgets = [] }) {
+  const { t, i18n } = useTranslation()
   const fmt          = useFormatCurrency()
+  const locale       = i18n.language === 'es' ? 'es-ES' : 'en-US'
   const sourceMonth  = prevMonthOf(targetMonth)
   const upsert       = useUpsertBudget()
 
@@ -70,8 +73,8 @@ export default function QuickCopyModal({ isOpen, onClose, targetMonth, existingB
     const ok  = results.filter(r => r.status === 'fulfilled').length
     const err = results.filter(r => r.status === 'rejected').length
 
-    if (ok > 0)  toast.success(`${ok} presupuesto${ok !== 1 ? 's' : ''} copiado${ok !== 1 ? 's' : ''} correctamente`)
-    if (err > 0) toast.error(`${err} presupuesto${err !== 1 ? 's' : ''} no se pudo${err !== 1 ? 'ron' : ''} copiar`)
+    if (ok > 0)  toast.success(t('quickCopy.successMsg', { count: ok }))
+    if (err > 0) toast.error(t('quickCopy.errorMsg', { count: err }))
 
     onClose()
   }
@@ -79,9 +82,9 @@ export default function QuickCopyModal({ isOpen, onClose, targetMonth, existingB
   const emptyMsg = isLoading
     ? null
     : sourceBudgets.length === 0
-      ? `No hay presupuestos en ${monthLabel(sourceMonth)} para copiar.`
+      ? t('quickCopy.noBudgets', { month: monthLabel(sourceMonth, locale) })
       : eligible.length === 0
-        ? 'Todos los presupuestos disponibles ya están configurados para este mes.'
+        ? t('quickCopy.allConfigured')
         : null
 
   return (
@@ -91,19 +94,19 @@ export default function QuickCopyModal({ isOpen, onClose, targetMonth, existingB
       title={
         <span className="flex items-center gap-2">
           <ClipboardCopy size={16} className="text-indigo-500" />
-          Copiar presupuestos
+          {t('quickCopy.title')}
         </span>
       }
       size="sm"
     >
       <div className="px-6 pt-1 pb-5 space-y-4">
-        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          Selecciona los presupuestos de{' '}
-          <span className="font-semibold text-slate-700 dark:text-slate-300">{monthLabel(sourceMonth)}</span>
-          {' '}que quieres copiar a{' '}
-          <span className="font-semibold text-slate-700 dark:text-slate-300">{monthLabel(targetMonth)}</span>.
-          Se copiarán con el mismo monto y podrás editarlos después.
-        </p>
+        <p
+          className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: t('quickCopy.description', {
+            source: monthLabel(sourceMonth, locale),
+            target: monthLabel(targetMonth, locale),
+          }) }}
+        />
 
         {isLoading ? (
           <div className="flex justify-center py-8">
@@ -122,10 +125,10 @@ export default function QuickCopyModal({ isOpen, onClose, targetMonth, existingB
                   onChange={toggleAll}
                   className="w-4 h-4 rounded accent-indigo-600 cursor-pointer"
                 />
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Seleccionar todos</span>
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{t('quickCopy.selectAll')}</span>
               </label>
               <span className="text-xs text-slate-400 dark:text-slate-500">
-                {selected.size} de {eligible.length} seleccionado{selected.size !== 1 ? 's' : ''}
+                {t(selected.size !== 1 ? 'quickCopy.selected_plural' : 'quickCopy.selected', { selected: selected.size, total: eligible.length })}
               </span>
             </div>
 
@@ -175,7 +178,7 @@ export default function QuickCopyModal({ isOpen, onClose, targetMonth, existingB
             disabled={submitting}
             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-40"
           >
-            Cancelar
+            {t('common.cancel')}
           </button>
           {!emptyMsg && (
             <button
@@ -184,10 +187,7 @@ export default function QuickCopyModal({ isOpen, onClose, targetMonth, existingB
               disabled={submitting || selected.size === 0}
               className="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
-              {submitting
-                ? 'Copiando…'
-                : `Copiar ${selected.size > 0 ? selected.size : ''} presupuesto${selected.size !== 1 ? 's' : ''}`
-              }
+              {submitting ? t('quickCopy.copying') : t('quickCopy.copyBtn', { count: selected.size })}
             </button>
           )}
         </div>

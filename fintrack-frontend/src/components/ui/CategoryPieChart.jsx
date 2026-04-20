@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 const legendContainer = {
   hidden: {},
@@ -31,12 +32,14 @@ function sectorPath(cx, cy, r, startAngle, endAngle) {
  *  - size: diámetro del SVG en px (default 280)
  *  - emptyMessage: texto cuando no hay datos (default "Sin gastos para este mes")
  */
-export default function CategoryPieChart({ data = [], fmt, size = 280, emptyMessage = 'Sin gastos para este mes' }) {
+export default function CategoryPieChart({ data = [], fmt, size = 280, emptyMessage }) {
+  const { t } = useTranslation()
   const [hovered, setHovered] = useState(null)
+  const resolvedEmptyMsg = emptyMessage ?? t('pieChart.noExpenses')
 
   if (!data.length) return (
     <div className="flex items-center justify-center h-40 text-xs text-slate-400 dark:text-slate-500">
-      {emptyMessage}
+      {resolvedEmptyMsg}
     </div>
   )
 
@@ -121,7 +124,7 @@ export default function CategoryPieChart({ data = [], fmt, size = 280, emptyMess
               </>
             ) : (
               <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                {data.length} {data.length === 1 ? 'categoría' : 'categorías'}
+                {t('pieChart.categories', { count: data.length })}
               </p>
             )}
           </div>

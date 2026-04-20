@@ -3,20 +3,22 @@ import {
   LayoutDashboard, ArrowLeftRight, Wallet,
   BarChart3, User, ShieldCheck, TrendingUp, X, PiggyBank,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import UserAvatar from '../ui/UserAvatar'
 
 const navLinks = [
-  { to: '/dashboard',    label: 'Dashboard',     icon: LayoutDashboard },
-  { to: '/transactions', label: 'Transacciones', icon: ArrowLeftRight  },
-  { to: '/budgets',      label: 'Presupuestos',  icon: Wallet          },
-  { to: '/savings',      label: 'Ahorros',       icon: PiggyBank       },
-  { to: '/reports',      label: 'Reportes',      icon: BarChart3       },
-  { to: '/profile',      label: 'Perfil',        icon: User            },
+  { to: '/dashboard',    key: 'dashboard',    icon: LayoutDashboard },
+  { to: '/transactions', key: 'transactions', icon: ArrowLeftRight  },
+  { to: '/budgets',      key: 'budgets',      icon: Wallet          },
+  { to: '/savings',      key: 'savings',      icon: PiggyBank       },
+  { to: '/reports',      key: 'reports',      icon: BarChart3       },
+  { to: '/profile',      key: 'profile',      icon: User            },
 ]
 
 export default function Sidebar({ isOpen, onClose }) {
   const { profile, session } = useAuth()
+  const { t } = useTranslation()
 
   const displayName = profile?.full_name ?? session?.user?.user_metadata?.full_name ?? '…'
   const email       = session?.user?.email ?? ''
@@ -47,7 +49,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navLinks.map(({ to, label, icon: Icon }) => (
+        {navLinks.map(({ to, key, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -64,7 +66,7 @@ export default function Sidebar({ isOpen, onClose }) {
             {({ isActive }) => (
               <>
                 <Icon size={17} className={isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'} />
-                {label}
+                {t(`nav.${key}`)}
               </>
             )}
           </NavLink>
@@ -85,7 +87,7 @@ export default function Sidebar({ isOpen, onClose }) {
             {({ isActive }) => (
               <>
                 <ShieldCheck size={17} className={isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'} />
-                Administración
+                {t('nav.admin')}
               </>
             )}
           </NavLink>

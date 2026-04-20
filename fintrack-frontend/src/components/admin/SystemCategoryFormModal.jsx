@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import Modal from '../ui/Modal'
 import CategoryIcon from '../ui/CategoryIcon'
 import { useCreateSystemCategory, useUpdateSystemCategory } from '../../hooks/useAdmin'
@@ -31,6 +32,7 @@ const inputCls = 'w-full border border-slate-200 dark:border-slate-700 rounded-l
 const lbl      = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5'
 
 export default function SystemCategoryFormModal({ isOpen, onClose, category = null }) {
+  const { t } = useTranslation()
   const isEditing      = !!category
   const createMutation = useCreateSystemCategory()
   const updateMutation = useUpdateSystemCategory()
@@ -67,20 +69,20 @@ export default function SystemCategoryFormModal({ isOpen, onClose, category = nu
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!name.trim()) { setError('El nombre es requerido'); return }
+    if (!name.trim()) { setError(t('systemCategoryModal.nameRequired')); return }
     setError('')
 
     try {
       if (isEditing) {
         await updateMutation.mutateAsync({ id: category.id, data: { name: name.trim(), color, icon } })
-        toast.success('Categoría actualizada')
+        toast.success(t('systemCategoryModal.updateSuccess'))
       } else {
         await createMutation.mutateAsync({ name: name.trim(), type, color, icon })
-        toast.success('Categoría del sistema creada')
+        toast.success(t('systemCategoryModal.createSuccess'))
       }
       onClose()
     } catch {
-      toast.error('No se pudo guardar la categoría')
+      toast.error(t('systemCategoryModal.saveError'))
     }
   }
 
@@ -88,18 +90,18 @@ export default function SystemCategoryFormModal({ isOpen, onClose, category = nu
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Editar categoría del sistema' : 'Nueva categoría del sistema'}
+      title={isEditing ? t('systemCategoryModal.editTitle') : t('systemCategoryModal.newTitle')}
       size="md"
     >
       <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
 
         {/* Nombre */}
         <div>
-          <label className={lbl}>Nombre</label>
+          <label className={lbl}>{t('common.name')}</label>
           <input
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder="Ej: Alimentación, Vivienda…"
+            placeholder={t('systemCategoryModal.namePlaceholder')}
             className={inputCls}
             autoFocus
           />
@@ -109,11 +111,11 @@ export default function SystemCategoryFormModal({ isOpen, onClose, category = nu
         {/* Tipo — solo al crear */}
         {!isEditing && (
           <div>
-            <p className={lbl}>Tipo</p>
+            <p className={lbl}>{t('common.type')}</p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { value: 'expense', label: 'Gasto',   active: 'bg-rose-500 text-white border-rose-500'       },
-                { value: 'income',  label: 'Ingreso',  active: 'bg-emerald-500 text-white border-emerald-500' },
+                { value: 'expense', label: t('common.expense'), active: 'bg-rose-500 text-white border-rose-500'       },
+                { value: 'income',  label: t('common.income'),  active: 'bg-emerald-500 text-white border-emerald-500' },
               ].map(opt => (
                 <label
                   key={opt.value}
@@ -134,7 +136,7 @@ export default function SystemCategoryFormModal({ isOpen, onClose, category = nu
 
         {/* Color */}
         <div>
-          <p className={lbl}>Color</p>
+          <p className={lbl}>{t('common.color')}</p>
           <div className="flex flex-wrap gap-2">
             {SYSTEM_COLORS.map(c => (
               <button
@@ -155,11 +157,11 @@ export default function SystemCategoryFormModal({ isOpen, onClose, category = nu
 
         {/* Icono */}
         <div>
-          <p className={lbl}>Icono</p>
+          <p className={lbl}>{t('systemCategoryModal.icon')}</p>
           <input
             value={iconSearch}
             onChange={e => setIconSearch(e.target.value)}
-            placeholder="Buscar icono…"
+            placeholder={t('systemCategoryModal.searchIcon')}
             className={`${inputCls} mb-2`}
           />
           <div className="h-40 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg p-2">
@@ -180,7 +182,7 @@ export default function SystemCategoryFormModal({ isOpen, onClose, category = nu
                 </button>
               ))}
               {filteredIcons.length === 0 && (
-                <p className="col-span-9 text-xs text-slate-400 text-center py-4">Sin resultados</p>
+                <p className="col-span-9 text-xs text-slate-400 text-center py-4">{t('systemCategoryModal.noResults')}</p>
               )}
             </div>
           </div>
@@ -194,14 +196,14 @@ export default function SystemCategoryFormModal({ isOpen, onClose, category = nu
           </div>
           <div>
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              {name.trim() || 'Vista previa…'}
+              {name.trim() || t('common.preview')}
             </span>
             <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full font-medium ${
               type === 'income'
                 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                 : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
             }`}>
-              {type === 'income' ? 'Ingreso' : 'Gasto'}
+              {type === 'income' ? t('common.income') : t('common.expense')}
             </span>
           </div>
         </div>
@@ -209,11 +211,11 @@ export default function SystemCategoryFormModal({ isOpen, onClose, category = nu
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <button type="button" onClick={onClose} disabled={isPending}
             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-40">
-            Cancelar
+            {t('common.cancel')}
           </button>
           <button type="submit" disabled={isPending}
             className="px-5 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
-            {isPending ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear categoría'}
+            {isPending ? t('common.saving') : isEditing ? t('common.save') : t('systemCategoryModal.createBtn')}
           </button>
         </div>
       </form>

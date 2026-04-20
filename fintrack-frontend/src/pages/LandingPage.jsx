@@ -1,6 +1,10 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { Sun, Moon } from 'lucide-react'
+import { useThemeStore } from '../store/themeStore'
+import LanguageToggle from '../components/ui/LanguageToggle'
 import {
   TrendingUp, ChevronRight, CheckCircle, ArrowUpRight, ArrowDownRight,
   ShoppingCart, Briefcase, Tv, Car, Utensils, Stethoscope,
@@ -26,7 +30,7 @@ function Section({ children, className = '' }) {
   )
 }
 
-// ── Mock data ────────────────────────────────────────────────────────────────
+// ── Static mock data (visual demo — kept in original language) ───────────────
 const mockTransactions = [
   { id: 1, description: 'Salario mensual',      category: 'Ingresos',        Icon: Briefcase,    color: '#10b981', type: 'income',  amount: 3200.00, date: '01 abr' },
   { id: 2, description: 'Supermercado',          category: 'Alimentación',    Icon: ShoppingCart, color: '#6366f1', type: 'expense', amount: 124.50,  date: '04 abr' },
@@ -64,59 +68,11 @@ function fmt(n) {
   return new Intl.NumberFormat('es-PA', { style: 'currency', currency: 'USD' }).format(n)
 }
 
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-function MockDashboard() {
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl shadow-indigo-500/20 border border-white/20 overflow-hidden w-full max-w-sm">
-      {/* Titlebar */}
-      <div className="flex items-center gap-1.5 px-4 py-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
-        <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-        <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-        <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">Dashboard — Abril 2026</span>
-      </div>
-      {/* Content */}
-      <div className="p-4 space-y-3">
-        {/* Stat chips */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: 'Balance',  value: '$660',   color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950' },
-            { label: 'Ingresos', value: '$3,200',  color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950' },
-            { label: 'Gastos',   value: '$2,540',  color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950' },
-          ].map(s => (
-            <div key={s.label} className={`${s.bg} rounded-xl p-2.5 text-center`}>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">{s.label}</p>
-              <p className={`text-xs font-bold ${s.color}`}>{s.value}</p>
-            </div>
-          ))}
-        </div>
-        {/* Mini transactions */}
-        <div>
-          <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">Últimas transacciones</p>
-          <div className="space-y-1">
-            {mockTransactions.slice(0, 4).map(tx => (
-              <div key={tx.id} className="flex items-center justify-between py-1 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: tx.color + '20' }}>
-                    <tx.Icon size={11} style={{ color: tx.color }} />
-                  </div>
-                  <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{tx.description}</span>
-                </div>
-                <span className={`text-xs font-semibold shrink-0 ml-2 ${tx.type === 'income' ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300'}`}>
-                  {tx.type === 'income' ? '+' : '−'}{fmt(tx.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Main component ───────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const { t } = useTranslation()
+  const { dark, toggle: toggleDark } = useThemeStore()
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-x-hidden">
 
@@ -129,15 +85,24 @@ export default function LandingPage() {
             </div>
             <span className="text-lg font-bold tracking-tight">FinTrack</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Link to="/showcase" className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors hidden sm:inline">
-              Para reclutadores
+              {t('landing.nav.recruiters')}
             </Link>
             <Link to="/login" className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-              Iniciar sesión
+              {t('landing.nav.login')}
             </Link>
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-700" />
+            <button
+              onClick={toggleDark}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            >
+              {dark ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
+            <LanguageToggle className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200" />
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-700" />
             <Link to="/register" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-              Comenzar gratis
+              {t('landing.nav.startFree')}
             </Link>
           </div>
         </div>
@@ -171,19 +136,18 @@ export default function LandingPage() {
           >
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-indigo-500/15 text-indigo-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-indigo-500/20">
               <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
-              Gestión financiera personal
+              {t('landing.hero.badge')}
             </motion.div>
 
             <motion.h1 variants={fadeUp} className="text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.1] mb-6">
-              Tus finanzas,{' '}
+              {t('landing.hero.title')}{' '}
               <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-                bajo control
+                {t('landing.hero.titleHighlight')}
               </span>
             </motion.h1>
 
             <motion.p variants={fadeUp} className="text-lg text-indigo-200/70 max-w-md leading-relaxed mb-10">
-              Registra ingresos y gastos, controla presupuestos por categoría y entiende
-              tus hábitos financieros con reportes claros y visuales.
+              {t('landing.hero.description')}
             </motion.p>
 
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3 mb-10">
@@ -191,22 +155,22 @@ export default function LandingPage() {
                 to="/register"
                 className="flex items-center justify-center gap-2 bg-indigo-500 text-white px-6 py-3.5 rounded-xl font-semibold hover:bg-indigo-400 transition-colors shadow-lg shadow-indigo-500/30"
               >
-                Empieza ahora — es gratis
+                {t('landing.hero.cta')}
                 <ChevronRight size={16} />
               </Link>
               <Link
                 to="/login"
                 className="flex items-center justify-center gap-2 text-indigo-200 border border-indigo-500/30 px-6 py-3.5 rounded-xl font-medium hover:bg-indigo-500/10 transition-colors"
               >
-                Iniciar sesión
+                {t('landing.hero.login')}
               </Link>
             </motion.div>
 
             <motion.div variants={fadeUp} className="flex flex-wrap gap-4 text-xs text-indigo-300/60">
-              {['Sin tarjeta de crédito', 'Datos cifrados', 'Acceso inmediato'].map(t => (
-                <span key={t} className="flex items-center gap-1.5">
+              {[t('landing.hero.badge1'), t('landing.hero.badge2'), t('landing.hero.badge3')].map(badge => (
+                <span key={badge} className="flex items-center gap-1.5">
                   <CheckCircle size={12} className="text-emerald-400" />
-                  {t}
+                  {badge}
                 </span>
               ))}
             </motion.div>
@@ -223,7 +187,47 @@ export default function LandingPage() {
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <MockDashboard />
+              {/* MockDashboard inline */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl shadow-indigo-500/20 border border-white/20 overflow-hidden w-full max-w-sm">
+                <div className="flex items-center gap-1.5 px-4 py-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">{t('landing.hero.dashboardTitle')}</span>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: t('common.balance'),  value: '$660',   color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950' },
+                      { label: t('common.incomes'),   value: '$3,200',  color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950' },
+                      { label: t('common.expenses'),  value: '$2,540',  color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950' },
+                    ].map(s => (
+                      <div key={s.label} className={`${s.bg} rounded-xl p-2.5 text-center`}>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-0.5">{s.label}</p>
+                        <p className={`text-xs font-bold ${s.color}`}>{s.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">{t('landing.hero.recentTransactions')}</p>
+                    <div className="space-y-1">
+                      {mockTransactions.slice(0, 4).map(tx => (
+                        <div key={tx.id} className="flex items-center justify-between py-1 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: tx.color + '20' }}>
+                              <tx.Icon size={11} style={{ color: tx.color }} />
+                            </div>
+                            <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{tx.description}</span>
+                          </div>
+                          <span className={`text-xs font-semibold shrink-0 ml-2 ${tx.type === 'income' ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300'}`}>
+                            {tx.type === 'income' ? '+' : '−'}{fmt(tx.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         </div>
@@ -236,17 +240,16 @@ export default function LandingPage() {
           <div>
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border border-emerald-100 dark:border-emerald-900">
               <ArrowLeftRight size={12} />
-              Transacciones
+              {t('nav.transactions')}
             </motion.div>
             <motion.h2 variants={fadeUp} className="text-3xl font-bold text-slate-900 dark:text-slate-50 mb-4 leading-snug">
-              Organiza cada<br />movimiento
+              {t('landing.features.transactionsTitle')}
             </motion.h2>
             <motion.p variants={fadeUp} className="text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
-              Registra ingresos y gastos con categorías, descripción y fecha. Filtra por tipo o
-              categoría y pagina a través de todo tu historial sin perder nada.
+              {t('landing.features.transactionsDesc')}
             </motion.p>
             <motion.ul variants={fadeUp} className="space-y-2.5">
-              {['Categorías con iconos personalizados', 'Búsqueda y filtros en tiempo real', 'Historial completo paginado'].map(f => (
+              {[t('landing.features.tf1'), t('landing.features.tf2'), t('landing.features.tf3')].map(f => (
                 <li key={f} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                   <CheckCircle size={15} className="text-emerald-500 shrink-0" />
                   {f}
@@ -262,8 +265,8 @@ export default function LandingPage() {
             className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-100 dark:shadow-none overflow-hidden"
           >
             <div className="px-5 py-4 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Transacciones — Abril 2026</span>
-              <span className="text-xs text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-md">34 en total</span>
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('landing.mockData.transactionsTitle')}</span>
+              <span className="text-xs text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-md">{t('landing.mockData.total')}</span>
             </div>
             <div className="divide-y divide-slate-50 dark:divide-slate-800">
               {mockTransactions.map((tx, i) => (
@@ -304,14 +307,13 @@ export default function LandingPage() {
           <div className="text-center mb-12">
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border border-violet-200 dark:border-violet-900">
               <Wallet size={12} />
-              Presupuestos
+              {t('nav.budgets')}
             </motion.div>
             <motion.h2 variants={fadeUp} className="text-3xl font-bold text-slate-900 dark:text-slate-50 mb-3">
-              Controla cuánto gastas
+              {t('landing.features.budgetsTitle')}
             </motion.h2>
             <motion.p variants={fadeUp} className="text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
-              Asigna un límite mensual a cada categoría. FinTrack calcula automáticamente cuánto llevas
-              gastado y te avisa cuando te acercas al límite.
+              {t('landing.features.budgetsDesc')}
             </motion.p>
           </div>
 
@@ -337,8 +339,8 @@ export default function LandingPage() {
                       </div>
                       <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{b.category}</span>
                     </div>
-                    {isWarning && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950 px-1.5 py-0.5 rounded-md">Atención</span>}
-                    {isDanger  && <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950 px-1.5 py-0.5 rounded-md">Excedido</span>}
+                    {isWarning && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950 px-1.5 py-0.5 rounded-md">{t('landing.features.attention')}</span>}
+                    {isDanger  && <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950 px-1.5 py-0.5 rounded-md">{t('landing.features.exceeded')}</span>}
                   </div>
 
                   <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
@@ -374,7 +376,7 @@ export default function LandingPage() {
 
             {/* Bar chart */}
             <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">Ingresos vs Gastos — últimos 6 meses</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">{t('landing.chartLabels.incomeVsExpenses')}</p>
               <div className="flex items-end gap-3 h-32">
                 {mockChart.map((m, i) => (
                   <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
@@ -399,14 +401,14 @@ export default function LandingPage() {
                 ))}
               </div>
               <div className="flex gap-4 mt-2">
-                <span className="flex items-center gap-1.5 text-xs text-slate-400"><span className="w-3 h-2 rounded-sm bg-emerald-500/80 inline-block" /> Ingresos</span>
-                <span className="flex items-center gap-1.5 text-xs text-slate-400"><span className="w-3 h-2 rounded-sm bg-rose-500/70 inline-block" /> Gastos</span>
+                <span className="flex items-center gap-1.5 text-xs text-slate-400"><span className="w-3 h-2 rounded-sm bg-emerald-500/80 inline-block" /> {t('landing.chartLabels.incomes')}</span>
+                <span className="flex items-center gap-1.5 text-xs text-slate-400"><span className="w-3 h-2 rounded-sm bg-rose-500/70 inline-block" /> {t('landing.chartLabels.expenses')}</span>
               </div>
             </div>
 
             {/* Category breakdown */}
             <div className="bg-slate-800 rounded-2xl p-5 border border-slate-700">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Gastos por categoría</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">{t('landing.chartLabels.byCategory')}</p>
               <div className="space-y-2.5">
                 {mockCategories.map((c, i) => (
                   <div key={c.name}>
@@ -434,17 +436,16 @@ export default function LandingPage() {
           <div>
             <motion.div variants={fadeUp} className="inline-flex items-center gap-2 bg-indigo-500/15 text-indigo-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border border-indigo-500/20">
               <BarChart3 size={12} />
-              Reportes
+              {t('nav.reports')}
             </motion.div>
             <motion.h2 variants={fadeUp} className="text-3xl font-bold text-white mb-4 leading-snug">
-              Entiende a dónde<br />va tu dinero
+              {t('landing.features.reportsTitle')}
             </motion.h2>
             <motion.p variants={fadeUp} className="text-slate-400 leading-relaxed mb-6">
-              Visualiza la evolución de tus ingresos y gastos mes a mes, identifica en qué categorías
-              gastas más y exporta los datos a CSV para análisis externo.
+              {t('landing.features.reportsDesc')}
             </motion.p>
             <motion.ul variants={fadeUp} className="space-y-2.5">
-              {['Gráfico de ingresos vs gastos (6 meses)', 'Distribución de gastos por categoría', 'Exportación de datos a CSV'].map(f => (
+              {[t('landing.features.rf1'), t('landing.features.rf2'), t('landing.features.rf3')].map(f => (
                 <li key={f} className="flex items-center gap-2 text-sm text-slate-400">
                   <CheckCircle size={15} className="text-indigo-400 shrink-0" />
                   {f}
@@ -459,21 +460,21 @@ export default function LandingPage() {
       <Section className="py-20 bg-white dark:bg-slate-950">
         <div className="max-w-6xl mx-auto px-5">
           <div className="text-center mb-12">
-            <motion.h2 variants={fadeUp} className="text-3xl font-bold text-slate-900 dark:text-slate-50 mb-3">Todo incluido, sin complicaciones</motion.h2>
+            <motion.h2 variants={fadeUp} className="text-3xl font-bold text-slate-900 dark:text-slate-50 mb-3">{t('landing.allFeatures.title')}</motion.h2>
             <motion.p variants={fadeUp} className="text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
-              Cada funcionalidad fue diseñada para que tomar control de tus finanzas sea simple y directo.
+              {t('landing.allFeatures.subtitle')}
             </motion.p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { Icon: ArrowLeftRight, label: 'Transacciones', desc: 'Registra ingresos y gastos con categoría, fecha y descripción.',         color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950' },
-              { Icon: Wallet,         label: 'Presupuestos',  desc: 'Límites mensuales por categoría con seguimiento automático.',            color: 'text-violet-600 dark:text-violet-400',  bg: 'bg-violet-50 dark:bg-violet-950' },
-              { Icon: BarChart3,      label: 'Reportes',      desc: 'Gráficos de tendencias y distribución exportables a CSV.',               color: 'text-indigo-600 dark:text-indigo-400',  bg: 'bg-indigo-50 dark:bg-indigo-950' },
-              { Icon: ShieldCheck,    label: 'Seguridad',     desc: 'Autenticación segura. Solo tú ves tus datos.',                           color: 'text-blue-600 dark:text-blue-400',      bg: 'bg-blue-50 dark:bg-blue-950' },
-            ].map(({ Icon, label, desc, color, bg }, i) => (
+              { Icon: ArrowLeftRight, labelKey: 'landing.allFeatures.t1', descKey: 'landing.allFeatures.d1', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950' },
+              { Icon: Wallet,         labelKey: 'landing.allFeatures.t2', descKey: 'landing.allFeatures.d2', color: 'text-violet-600 dark:text-violet-400',  bg: 'bg-violet-50 dark:bg-violet-950' },
+              { Icon: BarChart3,      labelKey: 'landing.allFeatures.t3', descKey: 'landing.allFeatures.d3', color: 'text-indigo-600 dark:text-indigo-400',  bg: 'bg-indigo-50 dark:bg-indigo-950' },
+              { Icon: ShieldCheck,    labelKey: 'landing.allFeatures.t4', descKey: 'landing.allFeatures.d4', color: 'text-blue-600 dark:text-blue-400',      bg: 'bg-blue-50 dark:bg-blue-950' },
+            ].map(({ Icon, labelKey, descKey, color, bg }, i) => (
               <motion.div
-                key={label}
+                key={labelKey}
                 variants={fadeUp}
                 transition={{ delay: i * 0.07 }}
                 className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors"
@@ -481,8 +482,8 @@ export default function LandingPage() {
                 <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mb-4`}>
                   <Icon size={18} className={color} />
                 </div>
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">{label}</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{desc}</p>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">{t(labelKey)}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{t(descKey)}</p>
               </motion.div>
             ))}
           </div>
@@ -505,17 +506,17 @@ export default function LandingPage() {
             />
 
             <motion.h2 variants={fadeUp} className="relative text-3xl md:text-4xl font-bold text-white mb-4">
-              Empieza a controlar<br />tus finanzas hoy
+              {t('landing.cta.title')}
             </motion.h2>
             <motion.p variants={fadeUp} className="relative text-indigo-200 max-w-md mx-auto mb-8">
-              Crea tu cuenta gratuitamente y comienza a registrar tus movimientos en menos de un minuto.
+              {t('landing.cta.subtitle')}
             </motion.p>
             <motion.div variants={fadeUp}>
               <Link
                 to="/register"
                 className="inline-flex items-center gap-2 bg-white text-indigo-700 font-semibold px-7 py-3.5 rounded-xl hover:bg-indigo-50 transition-colors shadow-xl"
               >
-                Crear cuenta gratis
+                {t('landing.cta.btn')}
                 <ChevronRight size={16} />
               </Link>
             </motion.div>
@@ -534,9 +535,9 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link to="/showcase" className="text-xs text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-              Documentación técnica →
+              {t('landing.footer.techDocs')}
             </Link>
-            <p className="text-xs text-slate-400 dark:text-slate-500">© 2026 FinTrack</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{t('landing.footer.copyright')}</p>
           </div>
         </div>
       </footer>

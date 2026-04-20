@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Save, AlertTriangle, Loader2, KeyRound, Eye, EyeOff, Plus, Pencil, Trash2, Bookmark, Camera } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { avatarService } from '../services/avatarService'
 
 import { toast } from 'sonner'
@@ -17,37 +18,32 @@ import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 const MAX_CUSTOM = 3
 
-const currencies = [
-  { code: 'USD', label: 'Dólar estadounidense (USD · $)'  },
-  { code: 'CAD', label: 'Dólar canadiense (CAD · CA$)'   },
-  { code: 'MXN', label: 'Peso mexicano (MXN · MX$)'      },
-  { code: 'CRC', label: 'Colón costarricense (CRC · ₡)'  },
-  { code: 'EUR', label: 'Euro (EUR · €)'                  },
-]
+const CURRENCY_CODES = ['USD', 'CAD', 'MXN', 'CRC', 'EUR']
 
 const inputCls = 'w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
 
 // ── Modal cambio de contraseña ────────────────────────────────────────────────
-const pwSchema = z.object({
-  current: z.string().min(1, 'Ingresa tu contraseña actual'),
-  next: z.string()
-    .min(8,  'Mínimo 8 caracteres')
-    .max(16, 'Máximo 16 caracteres')
-    .regex(/[A-Z]/, 'Debe incluir al menos una letra mayúscula')
-    .regex(/[0-9]/, 'Debe incluir al menos un número'),
-  confirm: z.string(),
-}).refine(d => d.next === d.confirm, {
-  message: 'Las contraseñas no coinciden',
-  path: ['confirm'],
-}).refine(d => d.current !== d.next, {
-  message: 'La nueva contraseña debe ser diferente a la actual',
-  path: ['next'],
-})
-
 function ChangePasswordModal({ email, onClose, onSuccess }) {
+  const { t } = useTranslation()
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNext,    setShowNext]    = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+
+  const pwSchema = z.object({
+    current: z.string().min(1, t('changePassword.validation.currentRequired')),
+    next: z.string()
+      .min(8,  t('changePassword.validation.newMin'))
+      .max(16, t('changePassword.validation.newMax'))
+      .regex(/[A-Z]/, t('changePassword.validation.newUppercase'))
+      .regex(/[0-9]/, t('changePassword.validation.newNumber')),
+    confirm: z.string(),
+  }).refine(d => d.next === d.confirm, {
+    message: t('changePassword.validation.noMatch'),
+    path: ['confirm'],
+  }).refine(d => d.current !== d.next, {
+    message: t('changePassword.validation.sameAsCurrent'),
+    path: ['next'],
+  })
 
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(pwSchema),
@@ -60,7 +56,7 @@ function ChangePasswordModal({ email, onClose, onSuccess }) {
       password: current,
     })
     if (signInErr) {
-      setError('current', { message: 'Contraseña actual incorrecta' })
+      setError('current', { message: t('changePassword.currentWrong') })
       return
     }
 
@@ -85,8 +81,8 @@ function ChangePasswordModal({ email, onClose, onSuccess }) {
             <KeyRound size={17} className="text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
-            <p className="text-base font-semibold text-slate-900 dark:text-slate-100">Cambiar contraseña</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Se cerrará tu sesión al finalizar</p>
+            <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{t('changePassword.title')}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('changePassword.subtitle')}</p>
           </div>
         </div>
 
@@ -94,7 +90,7 @@ function ChangePasswordModal({ email, onClose, onSuccess }) {
           {/* Contraseña actual */}
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-              Contraseña actual
+              {t('changePassword.currentPassword')}
             </label>
             <div className="relative">
               <input {...register('current')} type={showCurrent ? 'text' : 'password'} placeholder="••••••••" className={pwInput} autoFocus />
@@ -108,22 +104,22 @@ function ChangePasswordModal({ email, onClose, onSuccess }) {
           {/* Nueva contraseña */}
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-              Nueva contraseña
+              {t('changePassword.newPassword')}
             </label>
             <div className="relative">
-              <input {...register('next')} type={showNext ? 'text' : 'password'} placeholder="Mínimo 8 caracteres" className={pwInput} />
+              <input {...register('next')} type={showNext ? 'text' : 'password'} placeholder={t('changePassword.newPasswordPlaceholder')} className={pwInput} />
               <button type="button" onClick={() => setShowNext(v => !v)} className={eyeBtn} tabIndex={-1}>
                 {showNext ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">8-16 caracteres · al menos 1 mayúscula · al menos 1 número</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{t('changePassword.newPasswordHint')}</p>
             {errors.next && <p className="text-red-500 text-xs mt-1">{errors.next.message}</p>}
           </div>
 
           {/* Confirmar nueva contraseña */}
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-              Confirmar nueva contraseña
+              {t('changePassword.confirmPassword')}
             </label>
             <div className="relative">
               <input {...register('confirm')} type={showConfirm ? 'text' : 'password'} placeholder="••••••••" className={pwInput} />
@@ -147,7 +143,7 @@ function ChangePasswordModal({ email, onClose, onSuccess }) {
               disabled={isSubmitting}
               className="flex-1 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -155,7 +151,7 @@ function ChangePasswordModal({ email, onClose, onSuccess }) {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
               {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-              {isSubmitting ? 'Verificando…' : 'Cambiar contraseña'}
+              {isSubmitting ? t('changePassword.submitting') : t('changePassword.submit')}
             </button>
           </div>
         </form>
@@ -166,6 +162,7 @@ function ChangePasswordModal({ email, onClose, onSuccess }) {
 
 // ── Modal eliminación de cuenta ───────────────────────────────────────────────
 function DeleteAccountModal({ email, onClose, onConfirmed }) {
+  const { t } = useTranslation()
   const [step, setStep]       = useState(1)
   const [typed, setTyped]     = useState('')
   const [loading, setLoading] = useState(false)
@@ -190,18 +187,18 @@ function DeleteAccountModal({ email, onClose, onConfirmed }) {
                 <AlertTriangle size={20} className="text-rose-600 dark:text-rose-400" />
               </div>
               <div>
-                <p className="text-base font-semibold text-slate-900 dark:text-slate-100">Eliminar cuenta</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Esta acción es permanente e irreversible</p>
+                <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{t('deleteAccount.title')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{t('deleteAccount.subtitle')}</p>
               </div>
             </div>
 
             <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg p-4 space-y-2">
-              <p className="text-sm font-medium text-rose-700 dark:text-rose-400">Al eliminar tu cuenta se borrará:</p>
+              <p className="text-sm font-medium text-rose-700 dark:text-rose-400">{t('deleteAccount.warningTitle')}</p>
               <ul className="text-sm text-rose-600 dark:text-rose-400 space-y-1 list-disc list-inside">
-                <li>Todas tus transacciones</li>
-                <li>Todos tus presupuestos</li>
-                <li>Tus categorías personalizadas</li>
-                <li>Tu perfil y datos de acceso</li>
+                <li>{t('deleteAccount.item1')}</li>
+                <li>{t('deleteAccount.item2')}</li>
+                <li>{t('deleteAccount.item3')}</li>
+                <li>{t('deleteAccount.item4')}</li>
               </ul>
             </div>
 
@@ -210,13 +207,13 @@ function DeleteAccountModal({ email, onClose, onConfirmed }) {
                 onClick={onClose}
                 className="flex-1 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => setStep(2)}
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
               >
-                Continuar
+                {t('common.continue')}
               </button>
             </div>
           </div>
@@ -224,9 +221,9 @@ function DeleteAccountModal({ email, onClose, onConfirmed }) {
 
         {step === 2 && (
           <div className="p-6 space-y-4">
-            <p className="text-base font-semibold text-slate-900 dark:text-slate-100">Confirma tu identidad</p>
+            <p className="text-base font-semibold text-slate-900 dark:text-slate-100">{t('deleteAccount.confirmIdentity')}</p>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Escribe tu correo electrónico exactamente para confirmar la eliminación:
+              {t('deleteAccount.confirmInstructions')}
             </p>
             <p className="text-sm font-mono font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-2 select-all">
               {email}
@@ -234,7 +231,7 @@ function DeleteAccountModal({ email, onClose, onConfirmed }) {
             <input
               value={typed}
               onChange={e => setTyped(e.target.value)}
-              placeholder="Escribe tu correo…"
+              placeholder={t('deleteAccount.emailPlaceholder')}
               className={inputCls}
               autoFocus
             />
@@ -244,7 +241,7 @@ function DeleteAccountModal({ email, onClose, onConfirmed }) {
                 disabled={loading}
                 className="flex-1 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleDelete}
@@ -252,7 +249,7 @@ function DeleteAccountModal({ email, onClose, onConfirmed }) {
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading && <Loader2 size={15} className="animate-spin" />}
-                {loading ? 'Eliminando…' : 'Eliminar cuenta'}
+                {loading ? t('deleteAccount.deleting') : t('deleteAccount.deleteBtn')}
               </button>
             </div>
           </div>
@@ -265,6 +262,7 @@ function DeleteAccountModal({ email, onClose, onConfirmed }) {
 
 // ── ProfilePage ───────────────────────────────────────────────────────────────
 export default function ProfilePage() {
+  const { t } = useTranslation()
   const { profile, session, setProfile, clearAuth } = useAuthStore()
 
   const [fullName, setFullName]                   = useState(profile?.full_name ?? '')
@@ -287,10 +285,10 @@ export default function ProfilePage() {
 
   const confirmDeleteCat = () => {
     deleteCategoryMutation.mutate(confirmCat.id, {
-      onSuccess: () => { toast.success('Categoría eliminada'); setConfirmCat(null) },
+      onSuccess: () => { toast.success(t('categoryModal.deleteSuccess')); setConfirmCat(null) },
       onError:   (err) => {
         const msg = err?.response?.data
-        toast.error(typeof msg === 'string' ? msg : 'No se pudo eliminar la categoría')
+        toast.error(typeof msg === 'string' ? msg : t('categoryModal.saveError'))
         setConfirmCat(null)
       },
     })
@@ -324,14 +322,14 @@ export default function ProfilePage() {
     mutationFn: () => profileService.update({ fullName, currency }).then(r => r.data),
     onSuccess: (data) => {
       setProfile({ ...profile, full_name: data.fullName, currency: data.currency })
-      toast.success('Perfil actualizado')
+      toast.success(t('profile.updateSuccess'))
     },
-    onError: () => toast.error('No se pudo actualizar el perfil'),
+    onError: () => toast.error(t('profile.updateError')),
   })
 
   const handlePasswordChanged = async () => {
     setShowPasswordModal(false)
-    toast.success('Contraseña actualizada. Inicia sesión nuevamente.')
+    toast.success(t('changePassword.successMsg'))
     // Dar un momento para que el toast se vea antes de cerrar sesión
     setTimeout(async () => {
       useAuthStore.getState().startSignOut()
@@ -357,9 +355,9 @@ export default function ProfilePage() {
       await supabase.from('profiles').update({ avatar_url: url }).eq('id', session.user.id)
       setAvatarUrl(url)
       setProfile({ ...profile, avatar_url: url })
-      toast.success('Foto de perfil actualizada')
+      toast.success(t('profile.photoUpdated'))
     } catch (err) {
-      toast.error(err.message ?? 'No se pudo subir la imagen')
+      toast.error(err.message ?? t('profile.photoUploadError'))
     } finally {
       setAvatarUploading(false)
     }
@@ -372,9 +370,9 @@ export default function ProfilePage() {
       await supabase.from('profiles').update({ avatar_url: null }).eq('id', session.user.id)
       setAvatarUrl(null)
       setProfile({ ...profile, avatar_url: null })
-      toast.success('Foto de perfil eliminada')
+      toast.success(t('profile.photoRemoved'))
     } catch {
-      toast.error('No se pudo eliminar la foto')
+      toast.error(t('profile.photoRemoveError'))
     } finally {
       setAvatarUploading(false)
     }
@@ -397,7 +395,7 @@ export default function ProfilePage() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={avatarUploading}
                   className="relative w-16 h-16 rounded-full overflow-hidden border-4 border-white dark:border-slate-900 group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed"
-                  title={avatarUrl ? 'Cambiar foto' : 'Subir foto'}
+                  title={avatarUrl ? t('profile.changePhoto') : t('profile.uploadPhoto')}
                 >
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
@@ -420,13 +418,13 @@ export default function ProfilePage() {
 
               <div className="flex items-center gap-2 mt-2">
                 <button onClick={() => fileInputRef.current?.click()} disabled={avatarUploading} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-40">
-                  {avatarUrl ? 'Cambiar foto' : 'Subir foto'}
+                  {avatarUrl ? t('profile.changePhoto') : t('profile.uploadPhoto')}
                 </button>
                 {avatarUrl && (
                   <>
                     <span className="text-slate-300 dark:text-slate-600 select-none">·</span>
                     <button onClick={handleRemoveAvatar} disabled={avatarUploading} className="text-xs text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:underline disabled:opacity-40">
-                      Eliminar
+                      {t('profile.removePhoto')}
                     </button>
                   </>
                 )}
@@ -434,7 +432,7 @@ export default function ProfilePage() {
 
               {profile?.role === 'admin' && (
                 <span className="inline-flex items-center mt-2 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 px-2 py-0.5 rounded-full">
-                  Administrador
+                  {t('profile.adminBadge')}
                 </span>
               )}
             </div>
@@ -451,13 +449,13 @@ export default function ProfilePage() {
                 <KeyRound size={15} className="text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Contraseña</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Última actualización desconocida</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('profile.password')}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">{t('profile.passwordLastUpdated')}</p>
               </div>
             </div>
             <button onClick={() => setShowPasswordModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-4 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
               <KeyRound size={14} />
-              Cambiar contraseña
+              {t('profile.changePassword')}
             </button>
           </div>
         </div>
@@ -468,35 +466,35 @@ export default function ProfilePage() {
       <div className="order-2 lg:col-start-1 lg:row-start-1">
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800">
-            <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Información personal</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Actualiza tus datos de perfil y preferencias</p>
+            <p className="text-base font-semibold text-slate-900 dark:text-slate-50">{t('profile.personalInfo')}</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{t('profile.personalInfoSubtitle')}</p>
           </div>
 
           <div className="p-6 space-y-5">
             <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Nombre completo</label>
-              <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Tu nombre completo" className={inputCls} />
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('profile.fullName')}</label>
+              <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('profile.fullNamePlaceholder')} className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Email</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('profile.email')}</label>
               <input value={email} disabled className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed" />
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">El email no puede cambiarse</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('profile.emailReadonly')}</p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Moneda preferida</label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('profile.currency')}</label>
               <select value={currency} onChange={e => setCurrency(e.target.value)} className={inputCls}>
-                {currencies.map(c => (
-                  <option key={c.code} value={c.code}>{c.label}</option>
+                {CURRENCY_CODES.map(code => (
+                  <option key={code} value={code}>{t(`profile.currencies.${code}`)}</option>
                 ))}
               </select>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Solo cambia los símbolos que ves en la app. No modifica tus datos.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('profile.currencyHint')}</p>
             </div>
           </div>
 
           <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
             <button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="flex items-center gap-2 bg-indigo-600 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
               {saveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-              {saveMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
+              {saveMutation.isPending ? t('profile.saving') : t('profile.saveBtn')}
             </button>
           </div>
         </div>
@@ -507,19 +505,19 @@ export default function ProfilePage() {
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
             <div>
-              <p className="text-base font-semibold text-slate-900 dark:text-slate-50">Mis categorías</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Categorías personalizadas para organizar tus finanzas</p>
+              <p className="text-base font-semibold text-slate-900 dark:text-slate-50">{t('profile.myCategories')}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{t('profile.myCategoriesSubtitle')}</p>
             </div>
             <button onClick={openNewCat} disabled={userCategories.length >= MAX_CUSTOM} className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0">
               <Plus size={14} />
-              Nueva
+              {t('profile.newCategory')}
             </button>
           </div>
 
           <div className="p-6 space-y-4">
             <div>
               <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mb-1.5">
-                <span>{userCategories.length} de {MAX_CUSTOM} categorías usadas</span>
+                <span>{t('profile.categoriesUsed', { used: userCategories.length, max: MAX_CUSTOM })}</span>
                 <span className={userCategories.length >= MAX_CUSTOM ? 'text-amber-500 font-medium' : ''}>{userCategories.length}/{MAX_CUSTOM}</span>
               </div>
               <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -532,8 +530,8 @@ export default function ProfilePage() {
                 <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                   <Bookmark size={18} className="text-slate-400 dark:text-slate-500" />
                 </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Aún no tienes categorías personalizadas</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500">Crea hasta {MAX_CUSTOM} para organizar mejor tus finanzas</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('profile.noCategoriesTitle')}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">{t('profile.noCategoriesHint', { max: MAX_CUSTOM })}</p>
               </div>
             ) : (
               <ul className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -544,7 +542,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{cat.name}</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500">{cat.type === 'expense' ? 'Gasto' : 'Ingreso'}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{cat.type === 'expense' ? t('common.expense') : t('common.income')}</p>
                     </div>
                     <div className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color ?? '#06b6d4' }} />
                     <button onClick={() => openEditCat(cat)} className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-md transition-colors"><Pencil size={13} /></button>
@@ -556,7 +554,7 @@ export default function ProfilePage() {
 
             {userCategories.length >= MAX_CUSTOM && (
               <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-                Alcanzaste el límite de {MAX_CUSTOM} categorías personalizadas.
+                {t('profile.categoryLimitReached', { max: MAX_CUSTOM })}
               </p>
             )}
           </div>
@@ -571,12 +569,12 @@ export default function ProfilePage() {
               <AlertTriangle size={15} className="text-rose-500 dark:text-rose-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Zona de peligro</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Acciones irreversibles</p>
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('profile.dangerZone')}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">{t('profile.dangerZoneSubtitle')}</p>
             </div>
           </div>
           <button onClick={() => setShowDeleteModal(true)} className="w-full flex items-center justify-center gap-2 text-sm font-medium text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-4 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
-            Eliminar cuenta
+            {t('profile.deleteAccount')}
           </button>
         </div>
       </div>
@@ -608,8 +606,8 @@ export default function ProfilePage() {
         onClose={() => setConfirmCat(null)}
         onConfirm={confirmDeleteCat}
         loading={deleteCategoryMutation.isPending}
-        title="Eliminar categoría"
-        description={`¿Eliminar la categoría "${confirmCat?.name}"? Si tiene transacciones asociadas no podrá eliminarse.`}
+        title={t('categoryModal.deleteTitle')}
+        description={t('categoryModal.deleteConfirm', { name: confirmCat?.name })}
       />
     </div>
   )

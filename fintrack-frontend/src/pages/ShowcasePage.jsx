@@ -1,11 +1,15 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { Sun, Moon } from 'lucide-react'
+import { useThemeStore } from '../store/themeStore'
+import LanguageToggle from '../components/ui/LanguageToggle'
 import {
   TrendingUp, Cpu, Layers, MonitorPlay, Terminal, Database,
   ShieldCheck, Rocket, Server, Globe, Lock, CheckCircle,
   Cloud, Code2, ChevronRight, ArrowLeftRight, Wallet,
-  BarChart3, PiggyBank, Receipt, ShoppingCart, Car, Tv,
+  BarChart3, PiggyBank, ShoppingCart, Car, Tv,
   Utensils, Briefcase, ArrowUpRight, ArrowDownRight, Zap,
 } from 'lucide-react'
 
@@ -59,77 +63,77 @@ function CodeBlock({ title, lang, code }) {
   )
 }
 
-// ── Data ─────────────────────────────────────────────────────────────────────
+// ── Static data (icons + colors only — labels come from t()) ─────────────────
 
 const NAV_ITEMS = [
-  { id: 'stack',           label: 'Stack tecnológico', Icon: Cpu },
-  { id: 'arquitectura',    label: 'Arquitectura',       Icon: Layers },
-  { id: 'caracteristicas', label: 'Características',    Icon: MonitorPlay },
-  { id: 'api',             label: 'API REST',            Icon: Terminal },
-  { id: 'base-de-datos',   label: 'Base de datos',      Icon: Database },
-  { id: 'seguridad',       label: 'Seguridad',           Icon: ShieldCheck },
-  { id: 'pruebas',         label: 'Pruebas',             Icon: CheckCircle },
-  { id: 'despliegue',      label: 'Despliegue',          Icon: Rocket },
+  { id: 'stack',           labelKey: 'showcase.nav.stack',        Icon: Cpu },
+  { id: 'arquitectura',    labelKey: 'showcase.nav.architecture',  Icon: Layers },
+  { id: 'caracteristicas', labelKey: 'showcase.nav.features',      Icon: MonitorPlay },
+  { id: 'api',             labelKey: 'showcase.nav.api',           Icon: Terminal },
+  { id: 'base-de-datos',   labelKey: 'showcase.nav.database',      Icon: Database },
+  { id: 'seguridad',       labelKey: 'showcase.nav.security',      Icon: ShieldCheck },
+  { id: 'pruebas',         labelKey: 'showcase.nav.tests',         Icon: CheckCircle },
+  { id: 'despliegue',      labelKey: 'showcase.nav.deploy',        Icon: Rocket },
 ]
 
 const FRONTEND_STACK = [
-  { name: 'React 19',               role: 'Framework UI',      desc: 'Componentes funcionales, hooks personalizados, composición de UI reutilizable.',                      color: 'bg-cyan-50 dark:bg-cyan-950 border-cyan-100 dark:border-cyan-900',     text: 'text-cyan-700 dark:text-cyan-300' },
-  { name: 'Vite 8',                 role: 'Build tool',        desc: 'HMR instantáneo en desarrollo. Bundling con code-splitting manual para optimizar carga.',            color: 'bg-violet-50 dark:bg-violet-950 border-violet-100 dark:border-violet-900', text: 'text-violet-700 dark:text-violet-300' },
-  { name: 'TanStack Query v5',      role: 'Server state',      desc: 'Caché automático, refetch en background, invalidación por queryKey. Sin Redux.',                     color: 'bg-rose-50 dark:bg-rose-950 border-rose-100 dark:border-rose-900',     text: 'text-rose-700 dark:text-rose-300' },
-  { name: 'Zustand v5',             role: 'Client state',      desc: 'Store mínimo para sesión y perfil de usuario. Sin boilerplate, sin Context API manual.',            color: 'bg-amber-50 dark:bg-amber-950 border-amber-100 dark:border-amber-900', text: 'text-amber-700 dark:text-amber-300' },
-  { name: 'React Hook Form + Zod',  role: 'Formularios',       desc: 'Validación tipada en cliente. Schemas Zod reutilizables e integrados con resolvers.',               color: 'bg-emerald-50 dark:bg-emerald-950 border-emerald-100 dark:border-emerald-900', text: 'text-emerald-700 dark:text-emerald-300' },
-  { name: 'Framer Motion',          role: 'Animaciones',       desc: 'Page transitions, scroll animations, floating elements. Declarativo y performante.',                 color: 'bg-pink-50 dark:bg-pink-950 border-pink-100 dark:border-pink-900',     text: 'text-pink-700 dark:text-pink-300' },
-  { name: 'Tailwind CSS',           role: 'Estilos',           desc: 'Utility-first con dark mode automático. Diseño responsivo mobile-first en todo el proyecto.',        color: 'bg-sky-50 dark:bg-sky-950 border-sky-100 dark:border-sky-900',         text: 'text-sky-700 dark:text-sky-300' },
-  { name: 'Vitest',                 role: 'Testing',           desc: '28 tests unitarios. vi.mock() para Supabase, vi.setSystemTime() para fechas deterministas.',         color: 'bg-indigo-50 dark:bg-indigo-950 border-indigo-100 dark:border-indigo-900', text: 'text-indigo-700 dark:text-indigo-300' },
+  { name: 'React 19',              roleKey: 'showcase.stackSection.fe.react.role',    descKey: 'showcase.stackSection.fe.react.desc',    color: 'bg-cyan-50 dark:bg-cyan-950 border-cyan-100 dark:border-cyan-900',         text: 'text-cyan-700 dark:text-cyan-300' },
+  { name: 'Vite 8',                roleKey: 'showcase.stackSection.fe.vite.role',     descKey: 'showcase.stackSection.fe.vite.desc',     color: 'bg-violet-50 dark:bg-violet-950 border-violet-100 dark:border-violet-900', text: 'text-violet-700 dark:text-violet-300' },
+  { name: 'TanStack Query v5',     roleKey: 'showcase.stackSection.fe.tanstack.role', descKey: 'showcase.stackSection.fe.tanstack.desc', color: 'bg-rose-50 dark:bg-rose-950 border-rose-100 dark:border-rose-900',         text: 'text-rose-700 dark:text-rose-300' },
+  { name: 'Zustand v5',            roleKey: 'showcase.stackSection.fe.zustand.role',  descKey: 'showcase.stackSection.fe.zustand.desc',  color: 'bg-amber-50 dark:bg-amber-950 border-amber-100 dark:border-amber-900',     text: 'text-amber-700 dark:text-amber-300' },
+  { name: 'React Hook Form + Zod', roleKey: 'showcase.stackSection.fe.rhf.role',      descKey: 'showcase.stackSection.fe.rhf.desc',      color: 'bg-emerald-50 dark:bg-emerald-950 border-emerald-100 dark:border-emerald-900', text: 'text-emerald-700 dark:text-emerald-300' },
+  { name: 'Framer Motion',         roleKey: 'showcase.stackSection.fe.framer.role',   descKey: 'showcase.stackSection.fe.framer.desc',   color: 'bg-pink-50 dark:bg-pink-950 border-pink-100 dark:border-pink-900',         text: 'text-pink-700 dark:text-pink-300' },
+  { name: 'Tailwind CSS',          roleKey: 'showcase.stackSection.fe.tailwind.role', descKey: 'showcase.stackSection.fe.tailwind.desc', color: 'bg-sky-50 dark:bg-sky-950 border-sky-100 dark:border-sky-900',             text: 'text-sky-700 dark:text-sky-300' },
+  { name: 'Vitest',                roleKey: 'showcase.stackSection.fe.vitest.role',   descKey: 'showcase.stackSection.fe.vitest.desc',   color: 'bg-indigo-50 dark:bg-indigo-950 border-indigo-100 dark:border-indigo-900', text: 'text-indigo-700 dark:text-indigo-300' },
 ]
 
 const BACKEND_STACK = [
-  { name: '.NET 9',                       role: 'Runtime',         desc: 'Rendimiento top-tier, tipado fuerte, cross-platform. API compila a ejecutable nativo.' },
-  { name: 'ASP.NET Core Web API',         role: 'Framework REST',  desc: 'Routing attribute-based, middleware configurable, Model Binding, validación automática.' },
-  { name: 'Entity Framework Core',        role: 'ORM',             desc: 'LINQ queries tipadas, migraciones automáticas, InMemory provider para tests de integración.' },
-  { name: 'AutoMapper 16',                role: 'Mapeo de DTOs',   desc: 'Separación limpia entre entidades de DB y contratos del API. Perfiles de mapeo centralizados.' },
-  { name: 'xUnit + FluentAssertions',     role: 'Testing',         desc: '12 tests de integración con EF InMemory. Assertions legibles con .Should().Be().' },
+  { name: '.NET 9',                   roleKey: 'showcase.stackSection.be.dotnet.role',     descKey: 'showcase.stackSection.be.dotnet.desc' },
+  { name: 'ASP.NET Core Web API',     roleKey: 'showcase.stackSection.be.aspnet.role',     descKey: 'showcase.stackSection.be.aspnet.desc' },
+  { name: 'Entity Framework Core',    roleKey: 'showcase.stackSection.be.efcore.role',     descKey: 'showcase.stackSection.be.efcore.desc' },
+  { name: 'AutoMapper 16',            roleKey: 'showcase.stackSection.be.automapper.role', descKey: 'showcase.stackSection.be.automapper.desc' },
+  { name: 'xUnit + FluentAssertions', roleKey: 'showcase.stackSection.be.xunit.role',      descKey: 'showcase.stackSection.be.xunit.desc' },
 ]
 
 const INFRA_STACK = [
-  { name: 'Supabase',  role: 'PostgreSQL + Auth + Storage', desc: 'Base de datos gestionada, autenticación JWT lista para usar y almacenamiento de archivos con políticas RLS.', Icon: Database, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950' },
-  { name: 'Vercel',    role: 'Frontend hosting',            desc: 'Deploy automático al hacer push a main. SPA rewrites configurados en vercel.json para React Router.',         Icon: Cloud,    color: 'text-slate-500',   bg: 'bg-slate-50 dark:bg-slate-800' },
-  { name: 'Render',    role: 'Backend hosting',             desc: 'Hosting del API .NET 9. Free tier con cold start. Deploy desde repositorio Git.',                            Icon: Server,   color: 'text-indigo-500',  bg: 'bg-indigo-50 dark:bg-indigo-950' },
+  { name: 'Supabase', roleKey: 'showcase.stackSection.infra.supabase.role', descKey: 'showcase.stackSection.infra.supabase.desc', Icon: Database, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950' },
+  { name: 'Vercel',   roleKey: 'showcase.stackSection.infra.vercel.role',   descKey: 'showcase.stackSection.infra.vercel.desc',   Icon: Cloud,    color: 'text-slate-500',   bg: 'bg-slate-50 dark:bg-slate-800' },
+  { name: 'Render',   roleKey: 'showcase.stackSection.infra.render.role',   descKey: 'showcase.stackSection.infra.render.desc',   Icon: Server,   color: 'text-indigo-500',  bg: 'bg-indigo-50 dark:bg-indigo-950' },
 ]
 
 const API_ENDPOINTS = [
-  { group: 'Transacciones', color: 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300', rows: [
-    { method: 'GET',    path: '/api/transactions',         desc: 'Lista paginada. Filtros: tipo, categoría, rango de fechas, búsqueda por texto.',  params: 'page, limit, type, categoryId, from, to, search' },
-    { method: 'POST',   path: '/api/transactions',         desc: 'Crear transacción. Admite receipt_url para comprobante en Supabase Storage.',      params: null },
-    { method: 'PUT',    path: '/api/transactions/{id}',    desc: 'Actualizar. Solo el dueño puede modificar su transacción.',                        params: null },
-    { method: 'DELETE', path: '/api/transactions/{id}',    desc: 'Eliminar. El servicio verifica user_id antes de borrar.',                          params: null },
+  { groupKey: 'showcase.apiSection.groups.transactions', color: 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300', rows: [
+    { method: 'GET',    path: '/api/transactions',       descKey: 'showcase.apiSection.desc.txGet',    params: 'page, limit, type, categoryId, from, to, search' },
+    { method: 'POST',   path: '/api/transactions',       descKey: 'showcase.apiSection.desc.txPost',   params: null },
+    { method: 'PUT',    path: '/api/transactions/{id}',  descKey: 'showcase.apiSection.desc.txPut',    params: null },
+    { method: 'DELETE', path: '/api/transactions/{id}',  descKey: 'showcase.apiSection.desc.txDelete', params: null },
   ]},
-  { group: 'Categorías', color: 'bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300', rows: [
-    { method: 'GET',    path: '/api/categories',           desc: 'Devuelve categorías propias del usuario más las categorías de sistema (is_system = true).', params: null },
-    { method: 'POST',   path: '/api/categories',           desc: 'Crear categoría personalizada con nombre, icono y color hex.',                            params: null },
-    { method: 'DELETE', path: '/api/categories/{id}',      desc: 'Eliminar categoría propia. Las categorías de sistema no pueden eliminarse.',              params: null },
+  { groupKey: 'showcase.apiSection.groups.categories', color: 'bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300', rows: [
+    { method: 'GET',    path: '/api/categories',         descKey: 'showcase.apiSection.desc.catGet',    params: null },
+    { method: 'POST',   path: '/api/categories',         descKey: 'showcase.apiSection.desc.catPost',   params: null },
+    { method: 'DELETE', path: '/api/categories/{id}',    descKey: 'showcase.apiSection.desc.catDelete', params: null },
   ]},
-  { group: 'Presupuestos', color: 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300', rows: [
-    { method: 'GET',    path: '/api/budgets',              desc: 'Presupuestos del mes con porcentaje gastado calculado en tiempo real.',  params: 'month (YYYY-MM-DD)' },
-    { method: 'POST',   path: '/api/budgets',              desc: 'Crear límite mensual por categoría. Único por (user, categoría, mes).', params: null },
-    { method: 'PUT',    path: '/api/budgets/{id}',         desc: 'Actualizar monto límite.',                                             params: null },
-    { method: 'DELETE', path: '/api/budgets/{id}',         desc: 'Eliminar presupuesto.',                                                params: null },
+  { groupKey: 'showcase.apiSection.groups.budgets', color: 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300', rows: [
+    { method: 'GET',    path: '/api/budgets',            descKey: 'showcase.apiSection.desc.budGet',    params: 'month (YYYY-MM-DD)' },
+    { method: 'POST',   path: '/api/budgets',            descKey: 'showcase.apiSection.desc.budPost',   params: null },
+    { method: 'PUT',    path: '/api/budgets/{id}',       descKey: 'showcase.apiSection.desc.budPut',    params: null },
+    { method: 'DELETE', path: '/api/budgets/{id}',       descKey: 'showcase.apiSection.desc.budDelete', params: null },
   ]},
-  { group: 'Metas de ahorro', color: 'bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300', rows: [
-    { method: 'GET',    path: '/api/savings-goals',        desc: 'Metas del mes con progreso y porcentaje completado.',     params: 'month' },
-    { method: 'POST',   path: '/api/savings-goals',        desc: 'Crear meta con nombre, ícono, color y monto objetivo.',  params: null },
-    { method: 'PUT',    path: '/api/savings-goals/{id}',   desc: 'Actualizar monto actual o cualquier campo.',             params: null },
-    { method: 'DELETE', path: '/api/savings-goals/{id}',   desc: 'Eliminar meta.',                                         params: null },
+  { groupKey: 'showcase.apiSection.groups.savings', color: 'bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300', rows: [
+    { method: 'GET',    path: '/api/savings-goals',      descKey: 'showcase.apiSection.desc.savGet',    params: 'month' },
+    { method: 'POST',   path: '/api/savings-goals',      descKey: 'showcase.apiSection.desc.savPost',   params: null },
+    { method: 'PUT',    path: '/api/savings-goals/{id}', descKey: 'showcase.apiSection.desc.savPut',    params: null },
+    { method: 'DELETE', path: '/api/savings-goals/{id}', descKey: 'showcase.apiSection.desc.savDelete', params: null },
   ]},
-  { group: 'Reportes & Admin', color: 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300', rows: [
-    { method: 'GET',    path: '/api/reports/summary',      desc: 'Resumen mensual: totales por tipo, top categorías, tendencia 6 meses.',                      params: 'month' },
-    { method: 'GET',    path: '/api/admin/stats',          desc: 'Estadísticas globales del sistema (solo rol admin). Total usuarios, volumen de transacciones.', params: null, admin: true },
+  { groupKey: 'showcase.apiSection.groups.reports', color: 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300', rows: [
+    { method: 'GET', path: '/api/reports/summary', descKey: 'showcase.apiSection.desc.repGet', params: 'month' },
+    { method: 'GET', path: '/api/admin/stats',     descKey: 'showcase.apiSection.desc.admGet', params: null, admin: true },
   ]},
 ]
 
 const DB_TABLES = [
   {
-    name: 'profiles', desc: 'Extiende auth.users de Supabase. Se crea automáticamente al registrarse.',
+    name: 'profiles', descKey: 'showcase.dbSection.tableDesc.profiles',
     color: 'border-indigo-200 dark:border-indigo-800',
     cols: [
       { name: 'id',         type: 'uuid',    note: 'FK → auth.users (PK)' },
@@ -141,7 +145,7 @@ const DB_TABLES = [
     ],
   },
   {
-    name: 'categories', desc: 'Categorizacion de transacciones. Puede ser del sistema (visible para todos) o del usuario.',
+    name: 'categories', descKey: 'showcase.dbSection.tableDesc.categories',
     color: 'border-violet-200 dark:border-violet-800',
     cols: [
       { name: 'id',        type: 'uuid',    note: 'PK' },
@@ -153,7 +157,7 @@ const DB_TABLES = [
     ],
   },
   {
-    name: 'transactions', desc: 'Registro central de movimientos financieros. Cada fila pertenece a un solo usuario.',
+    name: 'transactions', descKey: 'showcase.dbSection.tableDesc.transactions',
     color: 'border-emerald-200 dark:border-emerald-800',
     cols: [
       { name: 'id',          type: 'uuid',    note: 'PK' },
@@ -167,7 +171,7 @@ const DB_TABLES = [
     ],
   },
   {
-    name: 'budgets', desc: 'Límites de gasto mensuales por categoría. Restricción UNIQUE evita duplicados.',
+    name: 'budgets', descKey: 'showcase.dbSection.tableDesc.budgets',
     color: 'border-amber-200 dark:border-amber-800',
     cols: [
       { name: 'id',           type: 'uuid',    note: 'PK' },
@@ -179,7 +183,7 @@ const DB_TABLES = [
     constraint: 'UNIQUE (user_id, category_id, month)',
   },
   {
-    name: 'savings_goals', desc: 'Metas de ahorro mensuales con seguimiento de progreso.',
+    name: 'savings_goals', descKey: 'showcase.dbSection.tableDesc.savings_goals',
     color: 'border-sky-200 dark:border-sky-800',
     cols: [
       { name: 'id',             type: 'uuid',    note: 'PK' },
@@ -201,7 +205,7 @@ const METHOD_COLORS = {
   DELETE: 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300',
 }
 
-// ── Mock UI data ─────────────────────────────────────────────────────────────
+// ── Mock UI data (visual demo) ────────────────────────────────────────────────
 const mockTx = [
   { id: 1, desc: 'Salario mensual',  cat: 'Ingresos',        Icon: Briefcase,    color: '#10b981', type: 'income',  amt: 3200.00 },
   { id: 2, desc: 'Supermercado',     cat: 'Alimentación',    Icon: ShoppingCart, color: '#6366f1', type: 'expense', amt: 124.50 },
@@ -231,6 +235,51 @@ function fmt(n) { return `$${n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
 
 // ── Main component ───────────────────────────────────────────────────────────
 export default function ShowcasePage() {
+  const { t } = useTranslation()
+  const { dark, toggle: toggleDark } = useThemeStore()
+
+  // Pre-computed translated arrays (must be inside component to use t())
+  const flowSteps = [
+    { n: '1', title: t('showcase.archSection.flow1t'), desc: t('showcase.archSection.flow1d') },
+    { n: '2', title: t('showcase.archSection.flow2t'), desc: t('showcase.archSection.flow2d') },
+    { n: '3', title: t('showcase.archSection.flow3t'), desc: t('showcase.archSection.flow3d') },
+    { n: '4', title: t('showcase.archSection.flow4t'), desc: t('showcase.archSection.flow4d') },
+  ]
+
+  const secCards = [
+    { icon: Lock,        color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-950', title: t('showcase.secSection.jwt.title'),     desc: t('showcase.secSection.jwt.desc') },
+    { icon: Database,    color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950', title: t('showcase.secSection.rls.title'),   desc: t('showcase.secSection.rls.desc') },
+    { icon: ShieldCheck, color: 'text-indigo-500',  bg: 'bg-indigo-50 dark:bg-indigo-950', title: t('showcase.secSection.roles.title'),  desc: t('showcase.secSection.roles.desc') },
+    { icon: Cloud,       color: 'text-amber-500',   bg: 'bg-amber-50 dark:bg-amber-950',   title: t('showcase.secSection.storage.title'), desc: t('showcase.secSection.storage.desc') },
+  ]
+
+  const beTestGroups = [
+    { group: t('showcase.testsSection.pagination.name'), desc: t('showcase.testsSection.pagination.desc') },
+    { group: t('showcase.testsSection.filters.name'),    desc: t('showcase.testsSection.filters.desc') },
+    { group: t('showcase.testsSection.totals.name'),     desc: t('showcase.testsSection.totals.desc') },
+    { group: t('showcase.testsSection.crud.name'),       desc: t('showcase.testsSection.crud.desc') },
+  ]
+
+  const deployServices = [
+    {
+      Icon: Cloud, color: 'text-slate-600', bg: 'bg-slate-50 dark:bg-slate-900', border: 'border-slate-200 dark:border-slate-700',
+      name: 'Vercel', role: t('showcase.deploySection.vercel.role'),
+      items: t('showcase.deploySection.vercel.items', { returnObjects: true }),
+    },
+    {
+      Icon: Server, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900', border: 'border-emerald-200 dark:border-emerald-800',
+      name: 'Render', role: t('showcase.deploySection.render.role'),
+      items: t('showcase.deploySection.render.items', { returnObjects: true }),
+    },
+    {
+      Icon: Database, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900', border: 'border-indigo-200 dark:border-indigo-800',
+      name: 'Supabase', role: t('showcase.deploySection.supabase.role'),
+      items: t('showcase.deploySection.supabase.items', { returnObjects: true }),
+    },
+  ]
+
+  const titleAfter = t('showcase.hero.titleAfter')
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-x-hidden">
 
@@ -243,14 +292,22 @@ export default function ShowcasePage() {
             </div>
             <span className="text-lg font-bold tracking-tight">FinTrack</span>
             <span className="hidden sm:inline-block text-slate-300 dark:text-slate-700">·</span>
-            <span className="hidden sm:inline-block text-sm text-slate-400 dark:text-slate-500">Documentación técnica</span>
+            <span className="hidden sm:inline-block text-sm text-slate-400 dark:text-slate-500">{t('showcase.techDocs')}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Link to="/" className="text-sm text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-              ← Inicio
+              {t('showcase.backHome')}
             </Link>
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-700" />
+            <button
+              onClick={toggleDark}
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            >
+              {dark ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
+            <LanguageToggle className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200" />
             <Link to="/register" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-              Probar app
+              {t('showcase.tryApp')}
             </Link>
           </div>
         </div>
@@ -266,15 +323,15 @@ export default function ShowcasePage() {
           >
             <div className="inline-flex items-center gap-2 bg-indigo-500/15 border border-indigo-500/20 text-indigo-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
               <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
-              Proyecto de portafolio · Para reclutadores
+              {t('showcase.hero.badge')}
             </div>
             <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
-              Cómo está construido{' '}
+              {t('showcase.hero.titleBefore')}{' '}
               <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">FinTrack</span>
+              {titleAfter && <>{' '}{titleAfter}</>}
             </h1>
             <p className="text-lg text-indigo-200/70 max-w-2xl mx-auto mb-8">
-              Una aplicación fullstack de gestión financiera personal. Esta página documenta su arquitectura,
-              stack tecnológico, patrones de diseño y decisiones de implementación.
+              {t('showcase.hero.desc')}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {['React 19', '.NET 9', 'Supabase', 'PostgreSQL', 'Vercel', 'xUnit', 'Vitest', 'TanStack Query'].map(tag => (
@@ -291,25 +348,25 @@ export default function ShowcasePage() {
         {/* Sticky sidebar nav */}
         <aside className="hidden lg:block w-52 shrink-0">
           <div className="sticky top-24">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Secciones</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">{t('showcase.sidebar.sections')}</p>
             <nav className="space-y-0.5">
-              {NAV_ITEMS.map(({ id, label, Icon }) => (
+              {NAV_ITEMS.map(({ id, labelKey, Icon }) => (
                 <a
                   key={id}
                   href={`#${id}`}
                   className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors group"
                 >
                   <Icon size={14} className="shrink-0 group-hover:text-indigo-500 transition-colors" />
-                  {label}
+                  {t(labelKey)}
                 </a>
               ))}
             </nav>
 
             <div className="mt-8 p-3 bg-indigo-50 dark:bg-indigo-950 rounded-xl border border-indigo-100 dark:border-indigo-900">
-              <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">¿Quieres probarlo?</p>
-              <p className="text-xs text-indigo-500 dark:text-indigo-400 mb-2">Crea una cuenta gratuita y explora la app en vivo.</p>
+              <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">{t('showcase.sidebar.ctaTitle')}</p>
+              <p className="text-xs text-indigo-500 dark:text-indigo-400 mb-2">{t('showcase.sidebar.ctaDesc')}</p>
               <Link to="/register" className="flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
-                Comenzar <ChevronRight size={11} />
+                {t('showcase.sidebar.ctaBtn')} <ChevronRight size={11} />
               </Link>
             </div>
           </div>
@@ -320,29 +377,26 @@ export default function ShowcasePage() {
 
           {/* ── Stack tecnológico ────────────────────────────────────────── */}
           <FadeSection id="stack">
-            <Pill icon={Cpu} label="Stack tecnológico" className="bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300" />
-            <H2>Tecnologías utilizadas</H2>
-            <Lead>
-              FinTrack es una aplicación fullstack moderna. El frontend consume el API REST del backend
-              que conecta a Supabase (PostgreSQL + Auth + Storage) como infraestructura.
-            </Lead>
+            <Pill icon={Cpu} label={t('showcase.stackSection.pill')} className="bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300" />
+            <H2>{t('showcase.stackSection.title')}</H2>
+            <Lead>{t('showcase.stackSection.lead')}</Lead>
 
             <div className="space-y-8">
               {/* Frontend */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Globe size={16} className="text-indigo-500" />
-                  <h3 className="font-semibold text-slate-800 dark:text-slate-100">Frontend</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-100">{t('showcase.stackSection.frontendLabel')}</h3>
                   <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">React + Vite</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {FRONTEND_STACK.map(t => (
-                    <motion.div key={t.name} variants={fadeUp} className={`border rounded-xl p-4 ${t.color}`}>
+                  {FRONTEND_STACK.map(item => (
+                    <motion.div key={item.name} variants={fadeUp} className={`border rounded-xl p-4 ${item.color}`}>
                       <div className="flex items-start justify-between mb-1">
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.name}</span>
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${t.text} bg-white/50 dark:bg-black/20`}>{t.role}</span>
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{item.name}</span>
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${item.text} bg-white/50 dark:bg-black/20`}>{t(item.roleKey)}</span>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{t.desc}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{t(item.descKey)}</p>
                     </motion.div>
                   ))}
                 </div>
@@ -352,17 +406,17 @@ export default function ShowcasePage() {
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Server size={16} className="text-emerald-500" />
-                  <h3 className="font-semibold text-slate-800 dark:text-slate-100">Backend</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-100">{t('showcase.stackSection.backendLabel')}</h3>
                   <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">.NET 9 Web API</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {BACKEND_STACK.map(t => (
-                    <motion.div key={t.name} variants={fadeUp} className="border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 rounded-xl p-4">
+                  {BACKEND_STACK.map(item => (
+                    <motion.div key={item.name} variants={fadeUp} className="border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 rounded-xl p-4">
                       <div className="flex items-start justify-between mb-1">
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.name}</span>
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950">{t.role}</span>
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{item.name}</span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950">{t(item.roleKey)}</span>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{t.desc}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{t(item.descKey)}</p>
                     </motion.div>
                   ))}
                 </div>
@@ -372,17 +426,17 @@ export default function ShowcasePage() {
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Cloud size={16} className="text-amber-500" />
-                  <h3 className="font-semibold text-slate-800 dark:text-slate-100">Infraestructura</h3>
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-100">{t('showcase.stackSection.infraLabel')}</h3>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {INFRA_STACK.map(t => (
-                    <motion.div key={t.name} variants={fadeUp} className={`border border-slate-100 dark:border-slate-800 ${t.bg} rounded-xl p-4`}>
+                  {INFRA_STACK.map(item => (
+                    <motion.div key={item.name} variants={fadeUp} className={`border border-slate-100 dark:border-slate-800 ${item.bg} rounded-xl p-4`}>
                       <div className="flex items-center gap-2 mb-2">
-                        <t.Icon size={16} className={t.color} />
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.name}</span>
+                        <item.Icon size={16} className={item.color} />
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{item.name}</span>
                       </div>
-                      <p className="text-[10px] font-semibold text-slate-400 mb-1 uppercase tracking-wide">{t.role}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{t.desc}</p>
+                      <p className="text-[10px] font-semibold text-slate-400 mb-1 uppercase tracking-wide">{t(item.roleKey)}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{t(item.descKey)}</p>
                     </motion.div>
                   ))}
                 </div>
@@ -392,19 +446,16 @@ export default function ShowcasePage() {
 
           {/* ── Arquitectura ─────────────────────────────────────────────── */}
           <FadeSection id="arquitectura">
-            <Pill icon={Layers} label="Arquitectura" className="bg-violet-50 dark:bg-violet-950 border border-violet-100 dark:border-violet-900 text-violet-700 dark:text-violet-300" />
-            <H2>Arquitectura del sistema</H2>
-            <Lead>
-              El sistema sigue una arquitectura de tres capas: cliente React, API REST .NET y Supabase como backend-as-a-service.
-              Los archivos van directo al Storage sin pasar por el API, reduciendo latencia y carga del servidor.
-            </Lead>
+            <Pill icon={Layers} label={t('showcase.archSection.pill')} className="bg-violet-50 dark:bg-violet-950 border border-violet-100 dark:border-violet-900 text-violet-700 dark:text-violet-300" />
+            <H2>{t('showcase.archSection.title')}</H2>
+            <Lead>{t('showcase.archSection.lead')}</Lead>
 
             {/* Diagram */}
             <motion.div variants={fadeUp} className="max-w-lg mx-auto space-y-3 mb-10">
               {/* Browser */}
               <div className="bg-indigo-50 dark:bg-indigo-950 border-2 border-indigo-200 dark:border-indigo-800 rounded-2xl p-4 text-center">
                 <Globe className="mx-auto mb-1.5 text-indigo-500" size={22} />
-                <p className="font-semibold text-sm text-slate-800 dark:text-slate-100">Navegador / Cliente</p>
+                <p className="font-semibold text-sm text-slate-800 dark:text-slate-100">{t('showcase.archSection.browser')}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">React 19 · Vite · TanStack Query · Zustand</p>
                 <span className="inline-block mt-1.5 text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full">Vercel</span>
               </div>
@@ -441,13 +492,13 @@ export default function ShowcasePage() {
                 <div className="bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-center">
                   <Database className="mx-auto mb-1.5 text-slate-500" size={20} />
                   <p className="font-semibold text-sm text-slate-800 dark:text-slate-100">PostgreSQL</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">5 tablas · RLS policies</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('showcase.archSection.dbTables')}</p>
                   <span className="inline-block mt-1.5 text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full">Supabase</span>
                 </div>
                 <div className="bg-amber-50 dark:bg-amber-950 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-center">
                   <Cloud className="mx-auto mb-1.5 text-amber-500" size={20} />
                   <p className="font-semibold text-sm text-slate-800 dark:text-slate-100">Storage</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Comprobantes · Avatares</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('showcase.archSection.storageFiles')}</p>
                   <span className="inline-block mt-1.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 px-2 py-0.5 rounded-full">Supabase</span>
                 </div>
               </div>
@@ -455,17 +506,12 @@ export default function ShowcasePage() {
 
             {/* Flow explanation */}
             <motion.div variants={fadeUp} className="grid sm:grid-cols-2 gap-4 mb-8">
-              {[
-                { n: '1', t: 'Autenticación', d: 'El usuario se autentica en Supabase. Se retorna un JWT HS256 firmado con el secret del proyecto.' },
-                { n: '2', t: 'Requests al API', d: 'El frontend adjunta el JWT en el header Authorization. El middleware del API valida la firma y extrae el user_id.' },
-                { n: '3', t: 'Consultas a DB', d: 'EF Core traduce LINQ a SQL y consulta PostgreSQL. Las RLS policies garantizan aislamiento por usuario.' },
-                { n: '4', t: 'Archivos directos', d: 'Los comprobantes se suben directo desde el browser a Supabase Storage (sin pasar por el API) usando el mismo JWT.' },
-              ].map(s => (
+              {flowSteps.map(s => (
                 <div key={s.n} className="flex gap-3">
                   <span className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{s.n}</span>
                   <div>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{s.t}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{s.d}</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{s.title}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{s.desc}</p>
                   </div>
                 </div>
               ))}
@@ -510,11 +556,9 @@ var data = await query
 
           {/* ── Características ──────────────────────────────────────────── */}
           <FadeSection id="caracteristicas">
-            <Pill icon={MonitorPlay} label="Características" className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-100 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300" />
-            <H2>Pantallas y funcionalidades</H2>
-            <Lead>
-              Cinco módulos principales más panel de administración. Cada módulo tiene su propia página, hook de datos y set de componentes.
-            </Lead>
+            <Pill icon={MonitorPlay} label={t('showcase.featSection.pill')} className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-100 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300" />
+            <H2>{t('showcase.featSection.title')}</H2>
+            <Lead>{t('showcase.featSection.lead')}</Lead>
 
             <div className="space-y-10">
 
@@ -529,9 +573,9 @@ var data = await query
                   <div className="p-4 bg-white dark:bg-slate-900">
                     <div className="grid grid-cols-3 gap-2 mb-4">
                       {[
-                        { l: 'Balance',   v: '$660',    c: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950' },
-                        { l: 'Ingresos',  v: '$3,200',  c: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950' },
-                        { l: 'Gastos',    v: '$2,540',  c: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950' },
+                        { l: t('common.balance'),  v: '$660',   c: 'text-indigo-600 dark:text-indigo-400',   bg: 'bg-indigo-50 dark:bg-indigo-950' },
+                        { l: t('common.incomes'),  v: '$3,200', c: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950' },
+                        { l: t('common.expenses'), v: '$2,540', c: 'text-rose-600 dark:text-rose-400',       bg: 'bg-rose-50 dark:bg-rose-950' },
                       ].map(s => (
                         <div key={s.l} className={`${s.bg} rounded-xl p-3 text-center`}>
                           <p className="text-[10px] text-slate-400 mb-0.5">{s.l}</p>
@@ -539,7 +583,7 @@ var data = await query
                         </div>
                       ))}
                     </div>
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Recientes</p>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">{t('showcase.featSection.recent')}</p>
                     <div className="space-y-1">
                       {mockTx.slice(0, 3).map(tx => (
                         <div key={tx.id} className="flex items-center justify-between py-1 px-2 rounded-lg">
@@ -560,14 +604,14 @@ var data = await query
                     <div className="mt-2 p-3 bg-indigo-50 dark:bg-indigo-950 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <PiggyBank size={14} className="text-indigo-500" />
-                        <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Ahorros del mes</span>
+                        <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">{t('showcase.featSection.savingsMonth')}</span>
                       </div>
-                      <span className="text-xs text-indigo-500">2 de 3 metas cumplidas</span>
+                      <span className="text-xs text-indigo-500">{t('showcase.featSection.goalsMet2of3')}</span>
                     </div>
                   </div>
                   <div className="px-4 pb-3 bg-white dark:bg-slate-900">
                     <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-1 mt-1">
-                      {['KPIs de balance, ingresos y gastos del mes actual', 'Acceso rápido a últimas transacciones', 'Resumen del estado de metas de ahorro'].map(f => (
+                      {(t('showcase.featSection.dashFeatures', { returnObjects: true })).map(f => (
                         <li key={f} className="flex items-start gap-2"><CheckCircle size={11} className="text-emerald-500 mt-0.5 shrink-0" />{f}</li>
                       ))}
                     </ul>
@@ -578,11 +622,11 @@ var data = await query
                 <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
                   <div className="bg-slate-50 dark:bg-slate-900 px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                     <ArrowLeftRight size={14} className="text-emerald-500" />
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Transacciones</span>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('nav.transactions')}</span>
                   </div>
                   <div className="p-4 bg-white dark:bg-slate-900">
                     <div className="flex gap-2 mb-3">
-                      {['Todos', 'Ingresos', 'Gastos'].map((f, i) => (
+                      {[t('showcase.featSection.filterAll'), t('showcase.featSection.filterIncome'), t('showcase.featSection.filterExpense')].map((f, i) => (
                         <span key={f} className={`text-xs px-2.5 py-1 rounded-full font-medium ${i === 0 ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>{f}</span>
                       ))}
                     </div>
@@ -613,7 +657,7 @@ var data = await query
                   </div>
                   <div className="px-4 pb-3 bg-white dark:bg-slate-900">
                     <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-1 mt-1">
-                      {['Filtros por tipo, categoría y rango de fechas', 'Búsqueda en tiempo real por descripción', 'Totales de ingresos/gastos del filtro activo', 'Subida y vista de comprobantes (PDF/imagen)'].map(f => (
+                      {(t('showcase.featSection.txFeatures', { returnObjects: true })).map(f => (
                         <li key={f} className="flex items-start gap-2"><CheckCircle size={11} className="text-emerald-500 mt-0.5 shrink-0" />{f}</li>
                       ))}
                     </ul>
@@ -627,10 +671,10 @@ var data = await query
                 <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
                   <div className="bg-slate-50 dark:bg-slate-900 px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                     <Wallet size={14} className="text-violet-500" />
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Presupuestos</span>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('nav.budgets')}</span>
                   </div>
                   <div className="p-4 bg-white dark:bg-slate-900 space-y-3">
-                    {mockBudgets.map((b, i) => {
+                    {mockBudgets.map((b) => {
                       const pct = Math.round((b.spent / b.limit) * 100)
                       const isWarn = pct >= 80
                       return (
@@ -643,21 +687,21 @@ var data = await query
                               <span className="text-xs font-medium text-slate-700 dark:text-slate-200">{b.cat}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              {isWarn && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950 px-1.5 py-0.5 rounded">Atención</span>}
+                              {isWarn && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950 px-1.5 py-0.5 rounded">{t('showcase.featSection.attn')}</span>}
                               <span className={`text-xs font-semibold ${isWarn ? 'text-amber-600' : 'text-slate-600 dark:text-slate-400'}`}>{pct}%</span>
                             </div>
                           </div>
                           <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-1">
                             <div className={`h-full rounded-full ${isWarn ? 'bg-amber-500' : b.bg}`} style={{ width: `${pct}%` }} />
                           </div>
-                          <p className="text-[10px] text-slate-400">{fmt(b.spent)} de {fmt(b.limit)}</p>
+                          <p className="text-[10px] text-slate-400">{fmt(b.spent)} {t('showcase.featSection.of')} {fmt(b.limit)}</p>
                         </div>
                       )
                     })}
                   </div>
                   <div className="px-4 pb-3 bg-white dark:bg-slate-900">
                     <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-1 mt-1">
-                      {['Límite mensual por categoría, UNIQUE en DB', 'Toast de aviso cuando superas el 70% o 100%', 'Notificaciones una sola vez por sesión (sessionStorage)'].map(f => (
+                      {(t('showcase.featSection.budgetFeatures', { returnObjects: true })).map(f => (
                         <li key={f} className="flex items-start gap-2"><CheckCircle size={11} className="text-emerald-500 mt-0.5 shrink-0" />{f}</li>
                       ))}
                     </ul>
@@ -668,7 +712,7 @@ var data = await query
                 <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
                   <div className="bg-slate-50 dark:bg-slate-900 px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                     <PiggyBank size={14} className="text-sky-500" />
-                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Metas de ahorro</span>
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('nav.savings')}</span>
                   </div>
                   <div className="p-4 bg-white dark:bg-slate-900 space-y-4">
                     {mockGoals.map(g => (
@@ -683,12 +727,12 @@ var data = await query
                       </div>
                     ))}
                     <div className="pt-2 border-t border-slate-50 dark:border-slate-800">
-                      <p className="text-xs text-slate-400">2 de 3 metas cumplidas este mes</p>
+                      <p className="text-xs text-slate-400">{t('showcase.featSection.goalsMetMonth')}</p>
                     </div>
                   </div>
                   <div className="px-4 pb-3 bg-white dark:bg-slate-900">
                     <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-1 mt-1">
-                      {['Metas mensuales con nombre, ícono y color personalizado', 'Barra de progreso con porcentaje calculado en el API', 'Resumen visible desde el Dashboard'].map(f => (
+                      {(t('showcase.featSection.savingsFeatures', { returnObjects: true })).map(f => (
                         <li key={f} className="flex items-start gap-2"><CheckCircle size={11} className="text-emerald-500 mt-0.5 shrink-0" />{f}</li>
                       ))}
                     </ul>
@@ -700,13 +744,13 @@ var data = await query
               <motion.div variants={fadeUp} className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
                 <div className="bg-slate-50 dark:bg-slate-900 px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                   <BarChart3 size={14} className="text-rose-500" />
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Reportes</span>
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('nav.reports')}</span>
                 </div>
                 <div className="p-5 bg-white dark:bg-slate-900">
                   <div className="grid lg:grid-cols-2 gap-6">
                     {/* Bar chart */}
                     <div>
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3">Ingresos vs Gastos — 6 meses</p>
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3">{t('showcase.featSection.chartTitle')}</p>
                       <div className="flex items-end gap-2 h-28">
                         {mockChart.map((m, i) => (
                           <div key={m.m} className="flex-1 flex flex-col items-center gap-1">
@@ -719,20 +763,14 @@ var data = await query
                         ))}
                       </div>
                       <div className="flex gap-4 mt-2">
-                        <span className="flex items-center gap-1 text-[10px] text-slate-400"><span className="w-3 h-2 rounded-sm bg-emerald-400 inline-block" />Ingresos</span>
-                        <span className="flex items-center gap-1 text-[10px] text-slate-400"><span className="w-3 h-2 rounded-sm bg-rose-400 inline-block" />Gastos</span>
+                        <span className="flex items-center gap-1 text-[10px] text-slate-400"><span className="w-3 h-2 rounded-sm bg-emerald-400 inline-block" />{t('showcase.featSection.chartIncome')}</span>
+                        <span className="flex items-center gap-1 text-[10px] text-slate-400"><span className="w-3 h-2 rounded-sm bg-rose-400 inline-block" />{t('showcase.featSection.chartExpense')}</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3">Características del módulo</p>
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3">{t('showcase.featSection.moduleFeatures')}</p>
                       <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-2">
-                        {[
-                          'Gráfico de barras SVG custom (sin librería externa)',
-                          'Gráfico de dona interactivo por categoría',
-                          'Filtro por mes con navegación anterior/siguiente',
-                          'Exportación a CSV del historial completo del mes',
-                          'Top 5 categorías con más gasto',
-                        ].map(f => (
+                        {(t('showcase.featSection.reportsFeatures', { returnObjects: true })).map(f => (
                           <li key={f} className="flex items-start gap-2"><CheckCircle size={11} className="text-emerald-500 mt-0.5 shrink-0" />{f}</li>
                         ))}
                       </ul>
@@ -746,26 +784,23 @@ var data = await query
 
           {/* ── API REST ─────────────────────────────────────────────────── */}
           <FadeSection id="api">
-            <Pill icon={Terminal} label="API REST" className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300" />
-            <H2>Endpoints del backend</H2>
-            <Lead>
-              API REST construida con ASP.NET Core. Todos los endpoints requieren JWT Bearer excepto donde se indique.
-              El user_id se extrae del token, nunca se acepta como parámetro del cliente.
-            </Lead>
+            <Pill icon={Terminal} label={t('showcase.apiSection.pill')} className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300" />
+            <H2>{t('showcase.apiSection.title')}</H2>
+            <Lead>{t('showcase.apiSection.lead')}</Lead>
 
             <motion.div variants={fadeUp} className="space-y-6">
               {API_ENDPOINTS.map(group => (
-                <div key={group.group}>
+                <div key={group.groupKey}>
                   <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mb-3 ${group.color}`}>
-                    {group.group}
+                    {t(group.groupKey)}
                   </div>
                   <div className="border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-                          <th className="text-left px-4 py-2.5 text-slate-400 font-semibold uppercase tracking-wide text-[10px] w-16">Método</th>
-                          <th className="text-left px-4 py-2.5 text-slate-400 font-semibold uppercase tracking-wide text-[10px]">Ruta</th>
-                          <th className="text-left px-4 py-2.5 text-slate-400 font-semibold uppercase tracking-wide text-[10px] hidden md:table-cell">Descripción</th>
+                          <th className="text-left px-4 py-2.5 text-slate-400 font-semibold uppercase tracking-wide text-[10px] w-16">{t('showcase.apiSection.colMethod')}</th>
+                          <th className="text-left px-4 py-2.5 text-slate-400 font-semibold uppercase tracking-wide text-[10px]">{t('showcase.apiSection.colRoute')}</th>
+                          <th className="text-left px-4 py-2.5 text-slate-400 font-semibold uppercase tracking-wide text-[10px] hidden md:table-cell">{t('showcase.apiSection.colDesc')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -777,9 +812,9 @@ var data = await query
                             <td className="px-4 py-3">
                               <code className="font-mono text-slate-700 dark:text-slate-200">{r.path}</code>
                               {r.params && <p className="text-[10px] text-slate-400 mt-0.5">?{r.params}</p>}
-                              {r.admin && <span className="ml-2 text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950 px-1.5 py-0.5 rounded">Solo admin</span>}
+                              {r.admin && <span className="ml-2 text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950 px-1.5 py-0.5 rounded">{t('showcase.apiSection.adminOnly')}</span>}
                             </td>
-                            <td className="px-4 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell">{r.desc}</td>
+                            <td className="px-4 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell">{t(r.descKey)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -817,22 +852,19 @@ const { data, isLoading } = useTransactions({
 
           {/* ── Base de datos ─────────────────────────────────────────────── */}
           <FadeSection id="base-de-datos">
-            <Pill icon={Database} label="Base de datos" className="bg-amber-50 dark:bg-amber-950 border border-amber-100 dark:border-amber-900 text-amber-700 dark:text-amber-300" />
-            <H2>Esquema de la base de datos</H2>
-            <Lead>
-              PostgreSQL gestionado por Supabase. Cinco tablas con claves foráneas y Row Level Security en todas ellas.
-              Los usuarios solo pueden leer y modificar sus propios datos.
-            </Lead>
+            <Pill icon={Database} label={t('showcase.dbSection.pill')} className="bg-amber-50 dark:bg-amber-950 border border-amber-100 dark:border-amber-900 text-amber-700 dark:text-amber-300" />
+            <H2>{t('showcase.dbSection.title')}</H2>
+            <Lead>{t('showcase.dbSection.lead')}</Lead>
 
             <motion.div variants={fadeUp} className="grid sm:grid-cols-2 gap-4">
-              {DB_TABLES.map(t => (
-                <div key={t.name} className={`border-2 ${t.color} rounded-xl overflow-hidden`}>
+              {DB_TABLES.map(tbl => (
+                <div key={tbl.name} className={`border-2 ${tbl.color} rounded-xl overflow-hidden`}>
                   <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
-                    <p className="font-mono font-bold text-sm text-slate-800 dark:text-slate-100">{t.name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{t.desc}</p>
+                    <p className="font-mono font-bold text-sm text-slate-800 dark:text-slate-100">{tbl.name}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{t(tbl.descKey)}</p>
                   </div>
                   <div className="px-4 py-3 bg-white dark:bg-slate-900 space-y-1.5">
-                    {t.cols.map(c => (
+                    {tbl.cols.map(c => (
                       <div key={c.name} className="flex items-center justify-between gap-2">
                         <span className="font-mono text-xs text-slate-700 dark:text-slate-200">{c.name}</span>
                         <div className="flex items-center gap-1.5">
@@ -841,9 +873,9 @@ const { data, isLoading } = useTransactions({
                         </div>
                       </div>
                     ))}
-                    {t.constraint && (
+                    {tbl.constraint && (
                       <p className="text-[10px] font-mono text-indigo-500 dark:text-indigo-400 pt-1 border-t border-slate-50 dark:border-slate-800 mt-1">
-                        {t.constraint}
+                        {tbl.constraint}
                       </p>
                     )}
                   </div>
@@ -854,20 +886,12 @@ const { data, isLoading } = useTransactions({
 
           {/* ── Seguridad ────────────────────────────────────────────────── */}
           <FadeSection id="seguridad">
-            <Pill icon={ShieldCheck} label="Seguridad" className="bg-rose-50 dark:bg-rose-950 border border-rose-100 dark:border-rose-900 text-rose-700 dark:text-rose-300" />
-            <H2>Autenticación y seguridad</H2>
-            <Lead>
-              Múltiples capas de seguridad: JWT en la API, Row Level Security en la base de datos
-              y políticas de Storage en Supabase. El backend nunca confía en el client_id del cuerpo del request.
-            </Lead>
+            <Pill icon={ShieldCheck} label={t('showcase.secSection.pill')} className="bg-rose-50 dark:bg-rose-950 border border-rose-100 dark:border-rose-900 text-rose-700 dark:text-rose-300" />
+            <H2>{t('showcase.secSection.title')}</H2>
+            <Lead>{t('showcase.secSection.lead')}</Lead>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
-              {[
-                { icon: Lock,       color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-950', title: 'JWT HS256',            desc: 'Supabase emite tokens firmados con el secret del proyecto. El middleware de .NET valida firma, expiración y claims sin llamar a Supabase en cada request.' },
-                { icon: Database,   color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950', title: 'Row Level Security', desc: 'Políticas RLS en todas las tablas. WHERE user_id = auth.uid() garantiza que cada usuario solo accede a sus propios registros, incluso con SQL directo.' },
-                { icon: ShieldCheck, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950', title: 'Roles de usuario',    desc: 'Dos roles: "user" y "admin". Los admins bypasean RLS para estadísticas globales. AdminRoute en el frontend bloquea la ruta si el perfil no tiene rol admin.' },
-                { icon: Cloud,      color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950', title: 'Storage policies',       desc: 'Las políticas del bucket "receipts" restringen INSERT, SELECT y DELETE al folder del propio usuario (receipts/{userId}/*). Sin server-side, directo desde browser.' },
-              ].map(s => (
+              {secCards.map(s => (
                 <motion.div key={s.title} variants={fadeUp} className={`${s.bg} border border-slate-100 dark:border-slate-800 rounded-xl p-4`}>
                   <div className="flex items-center gap-2 mb-2">
                     <s.icon size={16} className={s.color} />
@@ -908,12 +932,9 @@ public async Task<IActionResult> Create(CreateTransactionDto dto)
 
           {/* ── Pruebas ──────────────────────────────────────────────────── */}
           <FadeSection id="pruebas">
-            <Pill icon={CheckCircle} label="Pruebas" className="bg-sky-50 dark:bg-sky-950 border border-sky-100 dark:border-sky-900 text-sky-700 dark:text-sky-300" />
-            <H2>Suite de pruebas</H2>
-            <Lead>
-              40 tests en total — 28 unitarios en el frontend (Vitest) y 12 de integración en el backend (xUnit).
-              Cada test de backend obtiene su propia base de datos en memoria para total aislamiento.
-            </Lead>
+            <Pill icon={CheckCircle} label={t('showcase.testsSection.pill')} className="bg-sky-50 dark:bg-sky-950 border border-sky-100 dark:border-sky-900 text-sky-700 dark:text-sky-300" />
+            <H2>{t('showcase.testsSection.title')}</H2>
+            <Lead>{t('showcase.testsSection.lead')}</Lead>
 
             <div className="grid sm:grid-cols-2 gap-6 mb-8">
               {/* Frontend */}
@@ -929,8 +950,8 @@ public async Task<IActionResult> Create(CreateTransactionDto dto)
                 </div>
                 <div className="p-4 space-y-3 bg-white dark:bg-slate-900">
                   {[
-                    { file: 'utils.test.js',          count: 22, desc: 'formatCurrency, formatDate, formatRelativeDate (con setSystemTime), monthLabel, toYearMonth, getAvatarGradient' },
-                    { file: 'receiptService.test.js',  count: 6,  desc: 'Valida MIME type y tamaño. Mock de Supabase Storage con vi.mock(). Verifica ruta de remove().' },
+                    { file: 'utils.test.js',          count: 22, desc: t('showcase.testsSection.utilsDesc') },
+                    { file: 'receiptService.test.js',  count: 6,  desc: t('showcase.testsSection.receiptDesc') },
                   ].map(f => (
                     <div key={f.file} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                       <div className="flex items-center justify-between mb-1">
@@ -955,12 +976,7 @@ public async Task<IActionResult> Create(CreateTransactionDto dto)
                   </div>
                 </div>
                 <div className="p-4 space-y-3 bg-white dark:bg-slate-900">
-                  {[
-                    { group: 'Paginación (3)',   desc: 'Sin filtros devuelve todas · paginación por offset · no retorna datos de otro usuario' },
-                    { group: 'Filtros (3)',       desc: 'Filtro por tipo · búsqueda case-insensitive · filtro por rango de fechas' },
-                    { group: 'Totales (2)',       desc: 'TotalIncome y TotalExpense calculados · totales respetan el filtro de tipo activo' },
-                    { group: 'CRUD (4)',          desc: 'CreateAsync guarda en DB · DeleteAsync elimina · retorna false para ID inexistente · no elimina datos ajenos' },
-                  ].map(g => (
+                  {beTestGroups.map(g => (
                     <div key={g.group} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                       <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-0.5">{g.group}</p>
                       <p className="text-[10px] text-slate-400 leading-relaxed">{g.desc}</p>
@@ -1014,31 +1030,12 @@ public TransactionServiceTests()
 
           {/* ── Despliegue ───────────────────────────────────────────────── */}
           <FadeSection id="despliegue">
-            <Pill icon={Rocket} label="Despliegue" className="bg-rose-50 dark:bg-rose-950 border border-rose-100 dark:border-rose-900 text-rose-700 dark:text-rose-300" />
-            <H2>Infraestructura y despliegue</H2>
-            <Lead>
-              Tres servicios independientes en la nube, todos en free tier. El frontend se despliega automáticamente
-              al hacer push a main. El backend requiere deploy manual o CI/CD configurado en Render.
-            </Lead>
+            <Pill icon={Rocket} label={t('showcase.deploySection.pill')} className="bg-rose-50 dark:bg-rose-950 border border-rose-100 dark:border-rose-900 text-rose-700 dark:text-rose-300" />
+            <H2>{t('showcase.deploySection.title')}</H2>
+            <Lead>{t('showcase.deploySection.lead')}</Lead>
 
             <div className="grid sm:grid-cols-3 gap-4 mb-8">
-              {[
-                {
-                  Icon: Cloud, color: 'text-slate-600', bg: 'bg-slate-50 dark:bg-slate-900', border: 'border-slate-200 dark:border-slate-700',
-                  name: 'Vercel', role: 'Frontend',
-                  items: ['Deploy automático desde GitHub', 'SPA rewrites (vercel.json)', 'Code splitting: bundle principal 289 KB', 'Variables de entorno VITE_* en dashboard'],
-                },
-                {
-                  Icon: Server, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900', border: 'border-emerald-200 dark:border-emerald-800',
-                  name: 'Render', role: 'Backend .NET 9',
-                  items: ['Deploy desde repositorio Git', 'Runtime .NET 9 (sin Docker)', 'Variables de entorno en panel de Render', 'Free tier con cold start ~30 s'],
-                },
-                {
-                  Icon: Database, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900', border: 'border-indigo-200 dark:border-indigo-800',
-                  name: 'Supabase', role: 'PostgreSQL + Auth + Storage',
-                  items: ['PostgreSQL gestionado (500 MB free)', 'Auth JWT out-of-the-box', 'Storage bucket "receipts" con RLS', 'Migraciones vía dashboard o CLI'],
-                },
-              ].map(s => (
+              {deployServices.map(s => (
                 <motion.div key={s.name} variants={fadeUp} className={`border-2 ${s.border} ${s.bg} rounded-2xl p-5`}>
                   <div className="flex items-center gap-2 mb-1">
                     <s.Icon size={18} className={s.color} />
@@ -1100,11 +1097,11 @@ export default defineConfig({
             </div>
             <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">FinTrack</span>
             <span className="text-slate-300 dark:text-slate-700">·</span>
-            <span className="text-xs text-slate-400">Proyecto de portafolio</span>
+            <span className="text-xs text-slate-400">{t('showcase.footer.portfolio')}</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-xs text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">← Inicio</Link>
-            <Link to="/register" className="text-xs font-semibold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors">Probar la app</Link>
+            <Link to="/" className="text-xs text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{t('showcase.footer.backHome')}</Link>
+            <Link to="/register" className="text-xs font-semibold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors">{t('showcase.footer.tryApp')}</Link>
           </div>
         </div>
       </footer>

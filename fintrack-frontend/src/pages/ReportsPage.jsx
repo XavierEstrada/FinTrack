@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Download, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { monthLabel, toYearMonth, monthDisplay } from '../lib/utils'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import AnimatedNumber from '../components/ui/AnimatedNumber'
@@ -24,10 +25,10 @@ function monthBounds(ym) {
   return { from: `${ym}-01`, to: `${ym}-${String(last).padStart(2, '0')}` }
 }
 
-function LineChart({ data = [] }) {
+function LineChart({ data = [], noDataLabel }) {
   if (data.length < 2) return (
     <div className="h-32 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500">
-      Sin suficientes datos para el gráfico
+      {noDataLabel}
     </div>
   )
 
@@ -90,6 +91,7 @@ function LineChart({ data = [] }) {
 
 export default function ReportsPage() {
   const fmt = useFormatCurrency()
+  const { t, i18n } = useTranslation()
   const [currentDate, setCurrentDate] = useState(new Date())
   const currentMonth = toYearMonth(currentDate)
   const { from, to } = monthBounds(currentMonth)
@@ -105,7 +107,7 @@ export default function ReportsPage() {
 
   const exportCSV = () => {
     if (!byCategory.length) return
-    const headers = ['Categoría', 'Total', 'Porcentaje']
+    const headers = [t('reports.colCategory'), t('reports.colTotal'), t('reports.colPercent')]
     const rows    = byCategory.map(c => [
       `"${c.categoryName}"`,
       fmt(c.total),
@@ -126,7 +128,8 @@ export default function ReportsPage() {
   const exportPDF = () => {
     if (!byCategory.length) return
     const month    = monthDisplay(currentMonth)
-    const dateStr  = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+    const locale   = i18n.language === 'es' ? 'es-ES' : 'en-US'
+    const dateStr  = new Date().toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' })
 
     const rows = byCategory.map(c => `
       <tr>
@@ -144,10 +147,10 @@ export default function ReportsPage() {
       </tr>`).join('')
 
     const html = `<!DOCTYPE html>
-<html lang="es">
+<html lang="${i18n.language}">
 <head>
   <meta charset="UTF-8" />
-  <title>Reporte FinTrack — ${month}</title>
+  <title>FinTrack — ${month}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -187,26 +190,26 @@ export default function ReportsPage() {
 <body>
   <header>
     <div>
-      <h1>Reporte de gastos</h1>
+      <h1>${t('reports.reportTitle')}</h1>
       <p>${month}</p>
     </div>
     <div style="text-align:right">
-      <p style="font-size:11px;color:#94a3b8">Generado el ${dateStr}</p>
+      <p style="font-size:11px;color:#94a3b8">${dateStr}</p>
       <p style="font-size:11px;color:#94a3b8;margin-top:2px">FinTrack</p>
     </div>
   </header>
 
   <div class="summary">
     <div class="card">
-      <div class="card-label">Total gastado</div>
+      <div class="card-label">${t('reports.totalSpent')}</div>
       <div class="card-value accent">${fmt(totalExpenses)}</div>
     </div>
     <div class="card">
-      <div class="card-label">Categorías</div>
+      <div class="card-label">${t('reports.categoriesCount')}</div>
       <div class="card-value">${byCategory.length}</div>
     </div>
     <div class="card">
-      <div class="card-label">Mayor gasto</div>
+      <div class="card-label">${t('reports.topExpense')}</div>
       <div class="card-value">${byCategory[0]?.categoryName ?? '—'}</div>
     </div>
   </div>
@@ -214,16 +217,16 @@ export default function ReportsPage() {
   <table>
     <thead>
       <tr>
-        <th>Categoría</th>
-        <th style="text-align:right">Total</th>
-        <th style="text-align:right">%</th>
-        <th style="text-align:right">Distribución</th>
+        <th>${t('reports.colCategory')}</th>
+        <th style="text-align:right">${t('reports.colTotal')}</th>
+        <th style="text-align:right">${t('reports.colPercent')}</th>
+        <th style="text-align:right">${t('reports.colDistribution')}</th>
       </tr>
     </thead>
     <tbody>${rows}</tbody>
     <tfoot>
       <tr>
-        <td>Total</td>
+        <td>${t('common.total')}</td>
         <td style="text-align:right">${fmt(totalExpenses)}</td>
         <td style="text-align:right">100%</td>
         <td></td>
@@ -231,7 +234,7 @@ export default function ReportsPage() {
     </tfoot>
   </table>
 
-  <footer>Generado con FinTrack · ${dateStr}</footer>
+  <footer>${t('reports.generatedWith', { date: dateStr })}</footer>
 
   <script>window.onload = () => { window.print() }<\/script>
 </body>
@@ -286,8 +289,8 @@ export default function ReportsPage() {
       >
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-4">
           <div>
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Evolución del balance neto</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Últimos 6 meses</p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('reports.balanceTrend')}</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{t('reports.last6Months')}</p>
           </div>
           <div className="sm:text-right">
             {loadingTrend ? (
@@ -299,7 +302,7 @@ export default function ReportsPage() {
             )}
           </div>
         </div>
-        <LineChart data={trend} />
+        <LineChart data={trend} noDataLabel={t('reports.noExpenses')} />
         {trend.length > 0 && (
           <div className="flex justify-between mt-1 px-4">
             {trend.map(d => (
@@ -318,7 +321,7 @@ export default function ReportsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       >
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Gastos por categoría</p>
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('reports.expensesByCategory')}</p>
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 mb-5">{monthDisplay(currentMonth)}</p>
         <CategoryPieChart data={byCategory} fmt={fmt} />
       </motion.div>
@@ -331,8 +334,8 @@ export default function ReportsPage() {
         transition={{ duration: 0.3, delay: 0.15 }}
       >
         <div className="px-4 md:px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Resumen por categoría</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Gastos de {monthDisplay(currentMonth)}</p>
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('reports.categorySummary')}</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{t('reports.expensesOf', { month: monthDisplay(currentMonth) })}</p>
         </div>
 
         {loadingCat ? (
@@ -348,16 +351,16 @@ export default function ReportsPage() {
             ))}
           </div>
         ) : byCategory.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">Sin gastos para este mes</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-10">{t('reports.noExpenses')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[480px]">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-                  <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Categoría</th>
-                  <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Total</th>
-                  <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">%</th>
-                  <th className="px-4 md:px-5 py-3 w-32 md:w-40 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Distribución</th>
+                  <th className="text-left px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('reports.colCategory')}</th>
+                  <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('reports.colTotal')}</th>
+                  <th className="text-right px-4 md:px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('reports.colPercent')}</th>
+                  <th className="px-4 md:px-5 py-3 w-32 md:w-40 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('reports.colDistribution')}</th>
                 </tr>
               </thead>
               <motion.tbody
@@ -392,7 +395,7 @@ export default function ReportsPage() {
               </motion.tbody>
               <tfoot>
                 <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                  <td className="px-4 md:px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300">Total</td>
+                  <td className="px-4 md:px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('common.total')}</td>
                   <td className="px-4 md:px-5 py-3 text-right text-sm font-bold text-slate-800 dark:text-slate-100">{fmt(totalExpenses)}</td>
                   <td className="px-4 md:px-5 py-3 text-right text-sm text-slate-500 dark:text-slate-400">100%</td>
                   <td />

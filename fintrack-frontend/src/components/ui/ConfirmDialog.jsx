@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 /**
  * Diálogo de confirmación personalizado que reemplaza window.confirm().
@@ -21,11 +22,14 @@ export default function ConfirmDialog({
   onConfirm,
   title,
   description,
-  confirmLabel = 'Eliminar',
+  confirmLabel,
   loadingLabel,
   loading = false,
   variant = 'danger',
 }) {
+  const { t } = useTranslation()
+  const resolvedConfirmLabel = confirmLabel ?? t('confirmDialog.delete')
+  const resolvedLoadingLabel = loadingLabel ?? t('confirmDialog.deleting')
   const styles = variant === 'warning'
     ? {
         icon:   'bg-amber-50 dark:bg-amber-900/30',
@@ -75,7 +79,7 @@ export default function ConfirmDialog({
                 disabled={loading}
                 className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-40"
               >
-                Cancelar
+                {t('confirmDialog.cancel')}
               </button>
               <button
                 type="button"
@@ -83,7 +87,7 @@ export default function ConfirmDialog({
                 disabled={loading}
                 className={`px-4 py-2 text-sm font-medium text-white ${styles.btn} rounded-lg transition-colors disabled:opacity-50`}
               >
-                {loading ? (loadingLabel ?? 'Eliminando…') : confirmLabel}
+                {loading ? resolvedLoadingLabel : resolvedConfirmLabel}
               </button>
             </div>
           </motion.div>
