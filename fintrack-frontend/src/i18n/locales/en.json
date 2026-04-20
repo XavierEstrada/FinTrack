@@ -149,7 +149,10 @@
     "deleteTitle": "Delete transaction",
     "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
     "deleteSuccess": "Transaction deleted",
-    "deleteError": "Could not delete transaction"
+    "deleteError": "Could not delete transaction",
+    "from": "From",
+    "to": "To",
+    "clearFilters": "Clear filters"
   },
   "transactionModal": {
     "editTitle": "Edit transaction",

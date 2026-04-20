@@ -149,7 +149,10 @@
     "deleteTitle": "Eliminar transacción",
     "deleteConfirm": "¿Estás seguro de que quieres eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
     "deleteSuccess": "Transacción eliminada",
-    "deleteError": "No se pudo eliminar la transacción"
+    "deleteError": "No se pudo eliminar la transacción",
+    "from": "Desde",
+    "to": "Hasta",
+    "clearFilters": "Limpiar filtros"
   },
   "transactionModal": {
     "editTitle": "Editar transacción",

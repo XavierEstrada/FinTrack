@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight, Bookmark } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight, Bookmark, Calendar, X } from 'lucide-react'
 import { SkeletonRow } from '../components/ui/Skeleton'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
@@ -22,6 +22,8 @@ export default function TransactionsPage() {
   const [search, setSearch]                 = useState('')
   const [typeFilter, setTypeFilter]         = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [fromDate, setFromDate]             = useState('')
+  const [toDate, setToDate]                 = useState('')
   const [page, setPage]                     = useState(1)
   const [modalOpen, setModalOpen]           = useState(false)
   const [editing, setEditing]               = useState(null)
@@ -34,6 +36,8 @@ export default function TransactionsPage() {
     ...(typeFilter     && { type: typeFilter }),
     ...(categoryFilter && { categoryId: categoryFilter }),
     ...(search         && { search }),
+    ...(fromDate       && { from: fromDate }),
+    ...(toDate         && { to: toDate }),
   }
 
   const { data, isLoading, isError } = useTransactions(params)
@@ -47,7 +51,16 @@ export default function TransactionsPage() {
   const totalExpense = data?.totalExpense ?? 0
   const totalPages   = Math.max(1, Math.ceil(total / LIMIT))
 
-  const hasFilters = !!(typeFilter || categoryFilter || search)
+  const hasFilters = !!(typeFilter || categoryFilter || search || fromDate || toDate)
+
+  const clearFilters = () => {
+    setSearch('')
+    setTypeFilter('')
+    setCategoryFilter('')
+    setFromDate('')
+    setToDate('')
+    setPage(1)
+  }
 
   const openNew  = ()   => { setEditing(null); setModalOpen(true) }
   const openEdit = (tx) => { setEditing(tx);   setModalOpen(true) }
@@ -95,6 +108,28 @@ export default function TransactionsPage() {
             ))}
           </select>
 
+          {/* Date range */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Calendar size={14} className="text-slate-400 shrink-0" />
+            <input
+              type="date"
+              value={fromDate}
+              onChange={handleFilterChange(setFromDate)}
+              max={toDate || undefined}
+              title={t('transactions.from')}
+              className={`${inputCls} text-xs w-[130px]`}
+            />
+            <span className="text-slate-300 dark:text-slate-600 text-xs select-none">–</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={handleFilterChange(setToDate)}
+              min={fromDate || undefined}
+              title={t('transactions.to')}
+              className={`${inputCls} text-xs w-[130px]`}
+            />
+          </div>
+
           <button
             onClick={() => setCatModalOpen(true)}
             disabled={userCategories.length >= 3}
@@ -105,6 +140,17 @@ export default function TransactionsPage() {
             <span className="hidden sm:inline">{t('transactions.addCustomCategory')}</span>
             <span className="sm:hidden">{t('transactions.customCategoryMobile')}</span>
           </button>
+
+          {hasFilters && (
+            <button
+              onClick={clearFilters}
+              title={t('transactions.clearFilters')}
+              className="flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors shrink-0"
+            >
+              <X size={13} />
+              <span className="hidden sm:inline">{t('transactions.clearFilters')}</span>
+            </button>
+          )}
         </div>
 
         <button
