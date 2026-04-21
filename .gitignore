@@ -29,7 +29,7 @@ dist-ssr
 CLAUDE.md
 
 # Skills
-.skills-lock.json
+skills-lock.json
 
 # .NET build artifacts and Visual Studio cache
 fintrack-backend/.vs/
